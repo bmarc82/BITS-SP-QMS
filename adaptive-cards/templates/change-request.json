@@ -1,0 +1,114 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Freigabe einreichen",
+      "size": "Large",
+      "weight": "Bolder",
+      "color": "Accent"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${Dokumentname}",
+      "size": "Medium",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Bitte dokumentieren Sie die vorgenommenen Änderungen bevor das Dokument zur Freigabe eingereicht wird.",
+      "wrap": true,
+      "isSubtle": true,
+      "spacing": "Small"
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Versionsnummer *",
+          "weight": "Bolder"
+        },
+        {
+          "type": "Input.Text",
+          "id": "version",
+          "placeholder": "z.B. 1.0 / 1.1 / 2.0",
+          "value": "${AktuelleVersion}",
+          "regex": "^\\d+\\.\\d+$",
+          "errorMessage": "Format: Major.Minor (z.B. 1.0)"
+        },
+        {
+          "type": "TextBlock",
+          "text": "Art der Änderung *",
+          "weight": "Bolder",
+          "spacing": "Medium"
+        },
+        {
+          "type": "Input.ChoiceSet",
+          "id": "aenderungsart",
+          "style": "expanded",
+          "isRequired": true,
+          "errorMessage": "Bitte Änderungsart auswählen",
+          "choices": [
+            { "title": "Erstausgabe",           "value": "Erstausgabe" },
+            { "title": "Inhaltliche Änderung",  "value": "Inhaltliche Änderung" },
+            { "title": "Formale Korrektur",     "value": "Formale Korrektur" }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "Änderungsbeschreibung *",
+          "weight": "Bolder",
+          "spacing": "Medium"
+        },
+        {
+          "type": "Input.Text",
+          "id": "aenderungsbeschreibung",
+          "placeholder": "Was wurde geändert und warum? (Mindestens 20 Zeichen)",
+          "isMultiline": true,
+          "minLength": 20,
+          "isRequired": true,
+          "errorMessage": "Bitte Änderung beschreiben (mind. 20 Zeichen)"
+        },
+        {
+          "type": "TextBlock",
+          "text": "Freigeber *",
+          "weight": "Bolder",
+          "spacing": "Medium"
+        },
+        {
+          "type": "Input.Text",
+          "id": "freigeber",
+          "placeholder": "E-Mail-Adresse des Freigebers",
+          "isRequired": true,
+          "errorMessage": "Freigeber ist Pflichtfeld"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Zur Freigabe einreichen",
+      "style": "positive",
+      "data": {
+        "action": "submitForApproval",
+        "dokumentId": "${DokumentId}",
+        "dokumentUrl": "${DokumentUrl}"
+      }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Abbrechen",
+      "style": "default",
+      "data": {
+        "action": "cancel"
+      }
+    }
+  ]
+}

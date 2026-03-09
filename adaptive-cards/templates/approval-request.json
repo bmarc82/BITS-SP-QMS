@@ -14,21 +14,48 @@
       "type": "FactSet",
       "facts": [
         { "title": "Dokument:",     "value": "${Dokumentname}" },
+        { "title": "Version:",      "value": "${Version}" },
         { "title": "Erstellt von:", "value": "${Ersteller}" },
         { "title": "Prozessart:",   "value": "${Prozessart}" },
+        { "title": "Bereich:",      "value": "${Bereich}" },
         { "title": "ISO-Kapitel:",  "value": "${ISOKapitel}" },
         { "title": "Eingereicht:",  "value": "${EingereichtAm}" }
       ]
     },
     {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Änderungen in dieser Version",
+          "weight": "Bolder"
+        },
+        {
+          "type": "TextBlock",
+          "text": "Art: ${Aenderungsart}",
+          "isSubtle": true,
+          "spacing": "Small"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${Aenderungsbeschreibung}",
+          "wrap": true,
+          "spacing": "Small"
+        }
+      ]
+    },
+    {
       "type": "TextBlock",
-      "text": "Kommentar:",
-      "weight": "Bolder"
+      "text": "Ihr Kommentar (optional):",
+      "weight": "Bolder",
+      "spacing": "Medium"
     },
     {
       "type": "Input.Text",
       "id": "freigabeKommentar",
-      "placeholder": "Optionaler Kommentar...",
+      "placeholder": "Optionaler Kommentar zur Entscheidung...",
       "isMultiline": true
     }
   ],

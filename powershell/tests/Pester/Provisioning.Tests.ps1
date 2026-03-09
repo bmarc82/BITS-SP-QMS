@@ -190,3 +190,57 @@ Describe '05 – Berechtigungsgruppen' {
         }
     }
 }
+
+# ── Changelog ─────────────────────────────────────────────────────────────────
+
+Describe '04b – Changelog' {
+
+    It 'Liste "QMS-Changelog" existiert' {
+        $list = Get-PnPList -Identity 'QMS-Changelog' -ErrorAction SilentlyContinue
+        $list | Should -Not -BeNullOrEmpty
+    }
+
+    $expectedFields = @(
+        'QMSVersion'
+        'QMSAenderungsart'
+        'QMSAenderungsbeschreibung'
+        'QMSDokumentId'
+        'QMSDokumentUrl'
+        'QMSErsteller'
+        'QMSFreigeber'
+        'QMSFreigegebenAm'
+        'QMSFreigabeKommentar'
+        'QMSProzess'
+        'QMSBereich'
+    )
+
+    foreach ($field in $expectedFields) {
+        It "Spalte vorhanden in QMS-Changelog: $field" {
+            $f = Get-PnPField -List 'QMS-Changelog' -Identity $field -ErrorAction SilentlyContinue
+            $f | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'QMSAenderungsart enthält "Inhaltliche Änderung"' {
+        $f = Get-PnPField -List 'QMS-Changelog' -Identity 'QMSAenderungsart' -Includes Choices
+        $f.Choices | Should -Contain 'Inhaltliche Änderung'
+    }
+
+    It 'QMS-Changelog nur lesbar für QMS-Leser (kein Schreibzugriff)' {
+        $perms = Get-PnPListPermissions -Identity 'QMS-Changelog'
+        $leserPerm = $perms | Where-Object { $_.Member.Title -eq 'QMS-Leser' }
+        $leserPerm | Should -Not -BeNullOrEmpty
+        $leserPerm.RoleDefinitionBindings.Name | Should -Contain 'Read'
+        $leserPerm.RoleDefinitionBindings.Name | Should -Not -Contain 'Full Control'
+    }
+
+    It 'QMS-Dokumente hat Änderungsfeld QMSVersion' {
+        $f = Get-PnPField -List 'QMS-Dokumente' -Identity 'QMSVersion' -ErrorAction SilentlyContinue
+        $f | Should -Not -BeNullOrEmpty
+    }
+
+    It 'QMS-Dokumente hat Änderungsfeld QMSAenderungsbeschreibung' {
+        $f = Get-PnPField -List 'QMS-Dokumente' -Identity 'QMSAenderungsbeschreibung' -ErrorAction SilentlyContinue
+        $f | Should -Not -BeNullOrEmpty
+    }
+}

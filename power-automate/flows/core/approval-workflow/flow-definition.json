@@ -1,19 +1,180 @@
 {
-  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "name": "QMS Freigabe-Workflow",
-  "description": "Begleitet ein Dokument von Entwurf über Prüfung bis zur Freigabe",
-  "version": "1.0.0",
+  "description": "Begleitet ein Dokument von Entwurf über Prüfung bis zur Freigabe. Bei Genehmigung wird automatisch ein Eintrag in QMS-Changelog erstellt.",
+  "version": "1.1.0",
   "trigger": {
-    "type": "SharePoint_ItemCreatedOrModified",
+    "type": "SharePoint_ItemModified",
+    "siteUrl": "{QMS_SITE_URL}",
+    "listName": "QMS-Dokumente",
     "conditions": [
       { "field": "QMSStatus", "equals": "In Prüfung" }
     ]
   },
+  "variables": [
+    { "name": "DokumentId",             "value": "@triggerOutputs()?['body/ID']" },
+    { "name": "Dokumentname",           "value": "@triggerOutputs()?['body/FileLeafRef']" },
+    { "name": "DokumentUrl",            "value": "@triggerOutputs()?['body/{Link}']" },
+    { "name": "Ersteller",              "value": "@triggerOutputs()?['body/Author/DisplayName']" },
+    { "name": "ErstellerEmail",         "value": "@triggerOutputs()?['body/Author/Email']" },
+    { "name": "FreigeberEmail",         "value": "@triggerOutputs()?['body/QMSProzessverantwortlicher/Email']" },
+    { "name": "Version",                "value": "@triggerOutputs()?['body/QMSVersion']" },
+    { "name": "Aenderungsart",          "value": "@triggerOutputs()?['body/QMSAenderungsart']" },
+    { "name": "Aenderungsbeschreibung", "value": "@triggerOutputs()?['body/QMSAenderungsbeschreibung']" },
+    { "name": "Prozessart",             "value": "@triggerOutputs()?['body/QMSProzessart/Label']" },
+    { "name": "Bereich",                "value": "@triggerOutputs()?['body/QMSBereich/Label']" },
+    { "name": "Prozess",                "value": "@triggerOutputs()?['body/QMSProzess/Label']" },
+    { "name": "ISOKapitel",             "value": "@triggerOutputs()?['body/QMSISOKapitel']" }
+  ],
   "actions": [
-    { "type": "StartApproval",    "assignedTo": "{QMSFreigeber}" },
-    { "type": "Condition",        "expression": "Outcome equals Approved" },
-    { "type": "UpdateSharePoint", "field": "QMSStatus", "value": "Freigegeben" },
-    { "type": "SendAdaptiveCard", "template": "approval-request.json" },
-    { "type": "ArchiveOldVersion" }
+
+    {
+      "id": "validate_change_fields",
+      "type": "Condition",
+      "description": "Prüfen ob Änderungsfelder ausgefüllt sind (Pflichtfelder aus change-request.json)",
+      "expression": "@and(not(empty(variables('Version'))), not(empty(variables('Aenderungsart'))), not(empty(variables('Aenderungsbeschreibung'))))",
+      "ifFalse": [
+        {
+          "id": "notify_missing_fields",
+          "type": "SendEmail",
+          "description": "Ersteller informieren dass Änderungsfelder fehlen",
+          "to": "@{variables('ErstellerEmail')}",
+          "subject": "QMS: Freigabe-Einreichung unvollständig – @{variables('Dokumentname')}",
+          "body": "Bitte füllen Sie vor der Einreichung Version, Änderungsart und Änderungsbeschreibung aus."
+        },
+        {
+          "id": "reset_status_validation",
+          "type": "SharePoint_UpdateItem",
+          "siteUrl": "{QMS_SITE_URL}",
+          "listName": "QMS-Dokumente",
+          "itemId": "@{variables('DokumentId')}",
+          "fields": { "QMSStatus": "Entwurf" }
+        },
+        {
+          "id": "terminate_validation",
+          "type": "Terminate",
+          "status": "Failed",
+          "message": "Änderungsfelder nicht ausgefüllt – Status zurückgesetzt auf Entwurf."
+        }
+      ]
+    },
+
+    {
+      "id": "start_approval",
+      "type": "StartAndWaitForApproval",
+      "description": "Freigabeanfrage mit Änderungsdetails an Freigeber senden",
+      "approvalType": "Approve/Reject - First to respond",
+      "title": "QMS Freigabe: @{variables('Dokumentname')} v@{variables('Version')}",
+      "assignedTo": "@{variables('FreigeberEmail')}",
+      "details": "Änderungsart: @{variables('Aenderungsart')}\n\n@{variables('Aenderungsbeschreibung')}",
+      "itemLink": "@{variables('DokumentUrl')}",
+      "itemLinkDescription": "Dokument öffnen",
+      "adaptiveCard": {
+        "template": "approval-request.json",
+        "data": {
+          "Dokumentname":           "@{variables('Dokumentname')}",
+          "Version":                "@{variables('Version')}",
+          "Ersteller":              "@{variables('Ersteller')}",
+          "Prozessart":             "@{variables('Prozessart')}",
+          "Bereich":                "@{variables('Bereich')}",
+          "ISOKapitel":             "@{variables('ISOKapitel')}",
+          "EingereichtAm":          "@{utcNow('dd.MM.yyyy HH:mm')}",
+          "Aenderungsart":          "@{variables('Aenderungsart')}",
+          "Aenderungsbeschreibung": "@{variables('Aenderungsbeschreibung')}",
+          "ApproveUrl":             "{FLOW_CALLBACK_URL}/approve",
+          "RejectUrl":              "{FLOW_CALLBACK_URL}/reject",
+          "DokumentUrl":            "@{variables('DokumentUrl')}"
+        }
+      },
+      "timeout": "P7D"
+    },
+
+    {
+      "id": "approval_condition",
+      "type": "Switch",
+      "expression": "@outputs('start_approval')?['body/outcome']",
+      "cases": {
+
+        "Approve": [
+          {
+            "id": "update_status_approved",
+            "type": "SharePoint_UpdateItem",
+            "description": "Status auf Freigegeben setzen und Metadaten aktualisieren",
+            "siteUrl": "{QMS_SITE_URL}",
+            "listName": "QMS-Dokumente",
+            "itemId": "@{variables('DokumentId')}",
+            "fields": {
+              "QMSStatus":    "Freigegeben",
+              "QMSGueltigAb": "@{utcNow('yyyy-MM-dd')}"
+            }
+          },
+          {
+            "id": "create_changelog_entry",
+            "type": "SharePoint_CreateItem",
+            "description": "Changelog-Eintrag in QMS-Changelog erstellen",
+            "siteUrl": "{QMS_SITE_URL}",
+            "listName": "QMS-Changelog",
+            "fields": {
+              "Title":                    "@{variables('Dokumentname')}",
+              "QMSVersion":               "@{variables('Version')}",
+              "QMSAenderungsart":         "@{variables('Aenderungsart')}",
+              "QMSAenderungsbeschreibung":"@{variables('Aenderungsbeschreibung')}",
+              "QMSDokumentId":            "@{variables('DokumentId')}",
+              "QMSDokumentUrl":           "@{variables('DokumentUrl')}",
+              "QMSErsteller":             "@{variables('ErstellerEmail')}",
+              "QMSFreigeber":             "@{variables('FreigeberEmail')}",
+              "QMSFreigegebenAm":         "@{utcNow()}",
+              "QMSFreigabeKommentar":     "@{outputs('start_approval')?['body/comments']}"
+            }
+          },
+          {
+            "id": "archive_old_version",
+            "type": "SharePoint_CopyItem",
+            "description": "Vorherige freigegebene Version in Archiv-Ordner verschieben",
+            "siteUrl": "{QMS_SITE_URL}",
+            "sourceList": "QMS-Dokumente",
+            "destinationFolder": "Archiv/@{variables('Dokumentname')}/@{variables('Version')}"
+          },
+          {
+            "id": "notify_approved",
+            "type": "SendEmail",
+            "description": "Ersteller über Genehmigung informieren",
+            "to": "@{variables('ErstellerEmail')}",
+            "subject": "QMS: Dokument freigegeben – @{variables('Dokumentname')} v@{variables('Version')}",
+            "body": "Ihr Dokument wurde freigegeben.\n\nFreigeber: @{variables('FreigeberEmail')}\nKommentar: @{outputs('start_approval')?['body/comments']}\n\nDokument: @{variables('DokumentUrl')}"
+          }
+        ],
+
+        "Reject": [
+          {
+            "id": "update_status_rejected",
+            "type": "SharePoint_UpdateItem",
+            "description": "Status zurück auf Entwurf",
+            "siteUrl": "{QMS_SITE_URL}",
+            "listName": "QMS-Dokumente",
+            "itemId": "@{variables('DokumentId')}",
+            "fields": { "QMSStatus": "Entwurf" }
+          },
+          {
+            "id": "notify_rejected",
+            "type": "SendEmail",
+            "description": "Ersteller über Ablehnung informieren",
+            "to": "@{variables('ErstellerEmail')}",
+            "subject": "QMS: Dokument abgelehnt – @{variables('Dokumentname')} v@{variables('Version')}",
+            "body": "Ihr Dokument wurde abgelehnt.\n\nFreigeber: @{variables('FreigeberEmail')}\nGrund: @{outputs('start_approval')?['body/comments']}\n\nBitte überarbeiten Sie das Dokument und reichen es erneut ein.\nDokument: @{variables('DokumentUrl')}"
+          }
+        ],
+
+        "TimedOut": [
+          {
+            "id": "escalate_timeout",
+            "type": "SendEmail",
+            "description": "Eskalation nach 7 Tagen ohne Entscheidung",
+            "to": "{QMS_ADMIN_EMAIL}",
+            "subject": "QMS: Freigabe überfällig – @{variables('Dokumentname')}",
+            "body": "Die Freigabe für '@{variables('Dokumentname')}' ist seit 7 Tagen ausstehend.\n\nFreigeber: @{variables('FreigeberEmail')}\nDokument: @{variables('DokumentUrl')}\n\nBitte klären Sie den Status."
+          }
+        ]
+      }
+    }
   ]
 }
