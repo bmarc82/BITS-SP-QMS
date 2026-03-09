@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "modules": [
+    {
+      "id": "core",
+      "name": "QMS Kern",
+      "version": "1.0.0",
+      "required": true,
+      "description": "SharePoint-Struktur, Inhaltstypen, Berechtigungen",
+      "dependencies": [],
+      "permissions": ["Sites.FullControl"]
+    },
+    {
+      "id": "spfx",
+      "name": "SPFx Webparts",
+      "version": "1.0.0",
+      "required": false,
+      "description": "Prozesslandkarte, Review-Dashboard, KI-Assistent",
+      "dependencies": ["core"],
+      "permissions": ["AppCatalog.ReadWrite"]
+    },
+    {
+      "id": "power-automate",
+      "name": "Power Automate Flows",
+      "version": "1.0.0",
+      "required": false,
+      "description": "Freigabe-Workflow, Review-Erinnerung, Archivierung",
+      "dependencies": ["core"],
+      "permissions": ["Flows.ReadWrite"]
+    },
+    {
+      "id": "teams",
+      "name": "Teams Integration",
+      "version": "1.0.0",
+      "required": false,
+      "description": "Tabs, Bot, Messaging Extension",
+      "dependencies": ["core", "spfx"],
+      "permissions": ["TeamsAppInstallation.ReadWrite"]
+    },
+    {
+      "id": "ai-agents",
+      "name": "KI-Agenten",
+      "version": "1.0.0",
+      "required": false,
+      "description": "Dokumenten-Assistent, Review-Berater, Audit-Vorbereitung",
+      "dependencies": ["core"],
+      "permissions": ["Sites.Read.All"]
+    },
+    {
+      "id": "risk-module",
+      "name": "Risikomanagement (ISO 31000)",
+      "version": "1.0.0",
+      "required": false,
+      "description": "Risikoregister, Eskalation, Berichterstellung",
+      "dependencies": ["core", "power-automate"],
+      "permissions": ["Sites.ReadWrite"]
+    }
+  ]
+}

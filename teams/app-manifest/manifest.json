@@ -1,0 +1,75 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+  "packageName": "com.contoso.qms",
+  "developer": {
+    "name": "Contoso QM",
+    "websiteUrl": "https://contoso.sharepoint.com/sites/qms",
+    "privacyUrl": "https://contoso.sharepoint.com/sites/qms/Datenschutz",
+    "termsOfUseUrl": "https://contoso.sharepoint.com/sites/qms/Nutzungsbedingungen"
+  },
+  "name": {
+    "short": "QMS",
+    "full": "Qualitätsmanagementsystem"
+  },
+  "description": {
+    "short": "QMS M365 – ISO 9001:2015",
+    "full": "ISO 9001:2015-konformes Qualitätsmanagementsystem auf Microsoft 365"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0078D4",
+  "tabs": [
+    {
+      "name": "Prozesslandkarte",
+      "entityId": "processMap",
+      "contentUrl": "https://contoso.sharepoint.com/sites/qms/Seiten/prozesslandkarte.aspx",
+      "scopes": ["team", "groupchat"]
+    },
+    {
+      "name": "Meine Aufgaben",
+      "entityId": "myTasks",
+      "contentUrl": "https://contoso.sharepoint.com/sites/qms/Seiten/meine-aufgaben.aspx",
+      "scopes": ["personal"]
+    }
+  ],
+  "bots": [
+    {
+      "botId": "d4e5f6a7-b8c9-0123-def0-456789012345",
+      "scopes": ["personal", "team"],
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": ["personal", "team"],
+          "commands": [
+            { "title": "Hilfe",     "description": "QMS-Bot Hilfe anzeigen" },
+            { "title": "Aufgaben",  "description": "Meine offenen Aufgaben anzeigen" },
+            { "title": "Suchen",    "description": "Prozess suchen" }
+          ]
+        }
+      ]
+    }
+  ],
+  "composeExtensions": [
+    {
+      "botId": "d4e5f6a7-b8c9-0123-def0-456789012345",
+      "commands": [
+        {
+          "id": "searchProcesses",
+          "type": "query",
+          "title": "Prozess suchen",
+          "description": "QMS-Prozess suchen und teilen",
+          "initialRun": false,
+          "parameters": [
+            { "name": "searchQuery", "title": "Suchbegriff", "description": "Prozessname oder Schlüsselwort" }
+          ]
+        }
+      ]
+    }
+  ],
+  "validDomains": ["contoso.sharepoint.com"]
+}

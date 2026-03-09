@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "name": "QMS Freigabe-Workflow",
+  "description": "Begleitet ein Dokument von Entwurf über Prüfung bis zur Freigabe",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "SharePoint_ItemCreatedOrModified",
+    "conditions": [
+      { "field": "QMSStatus", "equals": "In Prüfung" }
+    ]
+  },
+  "actions": [
+    { "type": "StartApproval",    "assignedTo": "{QMSFreigeber}" },
+    { "type": "Condition",        "expression": "Outcome equals Approved" },
+    { "type": "UpdateSharePoint", "field": "QMSStatus", "value": "Freigegeben" },
+    { "type": "SendAdaptiveCard", "template": "approval-request.json" },
+    { "type": "ArchiveOldVersion" }
+  ]
+}

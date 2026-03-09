@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2022/09/ProvisioningSchema">
+  <pnp:Preferences Generator="QMS M365 1.0.0" />
+  <pnp:Templates ID="QMS-Core-Template">
+    <pnp:ProvisioningTemplate ID="QMS-Core" Version="1.0" BaseSiteTemplate="SITEPAGEPUBLISHING#0">
+      <pnp:ContentTypes>
+        <!-- QMS Inhaltstypen werden per PowerShell-Script deployt -->
+        <!-- Siehe: powershell/provisioning/02_Deploy-ContentTypes.ps1 -->
+      </pnp:ContentTypes>
+      <pnp:Lists>
+        <pnp:ListInstance Title="QMS-Dokumente" TemplateType="101"
+                          Description="QMS Dokumentenbibliothek"
+                          EnableVersioning="true" MaxVersionLimit="10">
+          <!-- Felder werden per PowerShell-Script konfiguriert -->
+        </pnp:ListInstance>
+        <pnp:ListInstance Title="QMS-Prozesse" TemplateType="100"
+                          Description="Prozesslandkarte">
+        </pnp:ListInstance>
+      </pnp:Lists>
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

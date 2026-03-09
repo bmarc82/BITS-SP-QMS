@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Admin Tool",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/admin-tool/src/app/main.ts",
+      "preLaunchTask": "build-admin-tool",
+      "outFiles": ["${workspaceFolder}/admin-tool/dist/**/*.js"]
+    },
+    {
+      "name": "PowerShell: Current File",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${file}",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

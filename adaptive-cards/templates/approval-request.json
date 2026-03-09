@@ -1,0 +1,56 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Freigabeanfrage",
+      "size": "Large",
+      "weight": "Bolder",
+      "color": "Accent"
+    },
+    {
+      "type": "FactSet",
+      "facts": [
+        { "title": "Dokument:",     "value": "${Dokumentname}" },
+        { "title": "Erstellt von:", "value": "${Ersteller}" },
+        { "title": "Prozessart:",   "value": "${Prozessart}" },
+        { "title": "ISO-Kapitel:",  "value": "${ISOKapitel}" },
+        { "title": "Eingereicht:",  "value": "${EingereichtAm}" }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "Kommentar:",
+      "weight": "Bolder"
+    },
+    {
+      "type": "Input.Text",
+      "id": "freigabeKommentar",
+      "placeholder": "Optionaler Kommentar...",
+      "isMultiline": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Http",
+      "title": "Genehmigen",
+      "style": "positive",
+      "url": "${ApproveUrl}",
+      "body": "{\"decision\":\"approved\",\"comment\":\"${freigabeKommentar}\"}"
+    },
+    {
+      "type": "Action.Http",
+      "title": "Ablehnen",
+      "style": "destructive",
+      "url": "${RejectUrl}",
+      "body": "{\"decision\":\"rejected\",\"comment\":\"${freigabeKommentar}\"}"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Dokument öffnen",
+      "url": "${DokumentUrl}"
+    }
+  ]
+}

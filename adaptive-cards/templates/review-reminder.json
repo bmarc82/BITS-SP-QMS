@@ -1,0 +1,29 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Review fällig: ${DaysDue} Tage",
+      "size": "Large",
+      "weight": "Bolder",
+      "color": "${UrgencyColor}"
+    },
+    {
+      "type": "FactSet",
+      "facts": [
+        { "title": "Dokument:",    "value": "${Dokumentname}" },
+        { "title": "Fällig am:",   "value": "${FaelligAm}" },
+        { "title": "Letzter Review:", "value": "${LetzterReview}" }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Review starten",
+      "url": "${ReviewUrl}"
+    }
+  ]
+}

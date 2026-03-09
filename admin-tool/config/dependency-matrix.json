@@ -1,0 +1,15 @@
+{
+  "matrix": {
+    "core": [],
+    "spfx": ["core"],
+    "power-automate": ["core"],
+    "power-apps": ["core"],
+    "teams": ["core", "spfx"],
+    "adaptive-cards": ["power-automate", "teams"],
+    "ai-agents": ["core"],
+    "risk-module": ["core", "power-automate"],
+    "security-module": ["core", "power-automate"],
+    "itil-module": ["core", "power-automate"],
+    "ohs-module": ["core", "power-automate"]
+  }
+}

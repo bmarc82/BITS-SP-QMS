@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2022/09/ProvisioningSchema">
+  <pnp:Templates ID="QMS-Permissions-Template">
+    <pnp:ProvisioningTemplate ID="QMS-Permissions" Version="1.0">
+      <pnp:Security>
+        <pnp:SiteGroups>
+          <pnp:SiteGroup Title="QMS-Leser"                    Description="Lesezugriff auf QMS-Inhalte" />
+          <pnp:SiteGroup Title="QMS-Ersteller"                Description="Ersteller von QMS-Dokumenten" />
+          <pnp:SiteGroup Title="QMS-Prozessverantwortliche"   Description="Process Owner" />
+          <pnp:SiteGroup Title="QMS-Freigeber"                Description="Freigabe von Dokumenten" />
+          <pnp:SiteGroup Title="QMS-Administratoren"          Description="QM-Administratoren" />
+        </pnp:SiteGroups>
+      </pnp:Security>
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

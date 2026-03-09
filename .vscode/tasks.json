@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-admin-tool",
+      "type": "shell",
+      "command": "npm run build",
+      "options": { "cwd": "${workspaceFolder}/admin-tool" },
+      "group": "build"
+    },
+    {
+      "label": "build-spfx",
+      "type": "shell",
+      "command": "gulp bundle --ship",
+      "options": { "cwd": "${workspaceFolder}/spfx" },
+      "group": "build"
+    },
+    {
+      "label": "test-powershell",
+      "type": "shell",
+      "command": "Invoke-Pester",
+      "options": { "cwd": "${workspaceFolder}/powershell/tests/Pester" }
+    }
+  ]
+}

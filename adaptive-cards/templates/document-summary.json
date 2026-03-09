@@ -1,0 +1,26 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "${Dokumentname}",
+      "size": "Large",
+      "weight": "Bolder"
+    },
+    {
+      "type": "FactSet",
+      "facts": [
+        { "title": "Status:",      "value": "${Status}" },
+        { "title": "Version:",     "value": "${Version}" },
+        { "title": "Freigegeben:", "value": "${FreigegebenAm}" },
+        { "title": "Freigeber:",   "value": "${Freigeber}" },
+        { "title": "Nächster Review:", "value": "${NaechsterReview}" }
+      ]
+    }
+  ],
+  "actions": [
+    { "type": "Action.OpenUrl", "title": "Öffnen", "url": "${DokumentUrl}" }
+  ]
+}

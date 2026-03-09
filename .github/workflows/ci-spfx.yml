@@ -1,0 +1,24 @@
+name: CI SPFx
+
+on:
+  push:
+    paths: ['spfx/**']
+  pull_request:
+    paths: ['spfx/**']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: spfx/package-lock.json
+      - run: npm ci
+        working-directory: spfx
+      - run: gulp bundle --ship
+        working-directory: spfx
+      - run: gulp package-solution --ship
+        working-directory: spfx

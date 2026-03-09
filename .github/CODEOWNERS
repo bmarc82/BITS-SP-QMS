@@ -1,0 +1,11 @@
+# Verantwortlichkeiten je Modul
+/admin-tool/     @qm-admin-team
+/powershell/     @qm-admin-team
+/spfx/           @dev-team
+/power-automate/ @process-team
+/power-apps/     @dev-team
+/teams/          @dev-team
+/adaptive-cards/ @dev-team
+/ai-agents/      @ai-team
+/docs/           @qm-admin-team
+/user-guides/    @qm-team

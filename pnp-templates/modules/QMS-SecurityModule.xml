@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2022/09/ProvisioningSchema">
+  <pnp:Templates ID="QMS-SecurityModule-Template">
+    <pnp:ProvisioningTemplate ID="QMS-SecurityModule" Version="1.0">
+      <!-- SecurityModule Struktur -->
+      <!-- Wird durch Install-SecurityModule.ps1 konfiguriert -->
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

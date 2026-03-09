@@ -1,0 +1,27 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Risikowarnung",
+      "size": "Large",
+      "weight": "Bolder",
+      "color": "Warning"
+    },
+    {
+      "type": "FactSet",
+      "facts": [
+        { "title": "Risiko:",       "value": "${Risikoname}" },
+        { "title": "Stufe:",        "value": "${Risikostufe}" },
+        { "title": "Eintrittsw.:",  "value": "${Eintrittswahrscheinlichkeit}" },
+        { "title": "Auswirkung:",   "value": "${Auswirkung}" },
+        { "title": "Verantwortl.:", "value": "${Verantwortlicher}" }
+      ]
+    }
+  ],
+  "actions": [
+    { "type": "Action.OpenUrl", "title": "Risiko bearbeiten", "url": "${RisikoUrl}" }
+  ]
+}

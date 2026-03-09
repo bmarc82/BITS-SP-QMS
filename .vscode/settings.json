@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "files.eol": "\n",
+  "files.encoding": "utf8",
+  "powershell.scriptAnalysis.enable": true,
+  "typescript.preferences.quoteStyle": "single",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[powershell]": {
+    "editor.defaultFormatter": "ms-vscode.powershell"
+  }
+}

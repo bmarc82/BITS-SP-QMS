@@ -1,0 +1,21 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy QMS
+        shell: pwsh
+        env:
+          QMS_TENANT_URL: ${{ secrets.QMS_TENANT_URL }}
+          QMS_APP_ID: ${{ secrets.QMS_APP_ID }}
+          QMS_CERT_THUMBPRINT: ${{ secrets.QMS_CERT_THUMBPRINT }}
+        run: |
+          ./powershell/provisioning/01_Create-QMSSite.ps1
