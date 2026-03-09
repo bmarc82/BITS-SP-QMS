@@ -1,0 +1,64 @@
+{
+  "schema": "qms/sharepoint-connector/v1",
+  "description": "SharePoint-Wissensbasis-Anbindung für alle QMS KI-Agenten. Nur freigegebene Dokumente werden indiziert.",
+  "connection": {
+    "siteUrl": "{QMS_SITE_URL}",
+    "authentication": "ManagedIdentity"
+  },
+  "knowledgeSources": [
+    {
+      "id": "qms-documents",
+      "type": "DocumentLibrary",
+      "library": "QMS-Dokumente",
+      "filter": "QMSStatus eq 'Freigegeben'",
+      "includedFields": [
+        "FileLeafRef",
+        "QMSVersion",
+        "QMSISOKapitel",
+        "QMSBereich",
+        "QMSProzessart",
+        "QMSProzessverantwortlicher",
+        "QMSGueltigAb",
+        "QMSNaechstesPruefDatum",
+        "QMSStatus"
+      ],
+      "contentExtraction": {
+        "enabled": true,
+        "formats": ["docx", "pdf", "xlsx"],
+        "maxFileSizeKB": 10240
+      },
+      "security": {
+        "note": "Nur Dokumente mit QMSStatus='Freigegeben' werden indiziert. Entwürfe und 'In Prüfung' bleiben für KI unsichtbar.",
+        "enforceSharePointPermissions": true
+      }
+    },
+    {
+      "id": "qms-processes",
+      "type": "List",
+      "listName": "QMS-Prozesse",
+      "filter": "QMSStatus ne 'Archiviert'",
+      "includedFields": [
+        "Title",
+        "QMSProzessart",
+        "QMSBereich",
+        "QMSISOKapitel",
+        "QMSProzessverantwortlicher",
+        "QMSStatus"
+      ]
+    }
+  ],
+  "indexing": {
+    "schedule": "daily",
+    "time": "02:00",
+    "timeZone": "W. Europe Standard Time",
+    "incrementalSync": true,
+    "fullSyncWeekly": true,
+    "fullSyncDay": "Sunday"
+  },
+  "search": {
+    "semanticSearch": true,
+    "language": "de-DE",
+    "maxResults": 10,
+    "minRelevanceScore": 0.7
+  }
+}

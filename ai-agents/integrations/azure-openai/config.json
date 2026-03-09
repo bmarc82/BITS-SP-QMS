@@ -1,0 +1,55 @@
+{
+  "schema": "qms/azure-openai/v1",
+  "description": "Azure AI Foundry Konfiguration für QMS KI-Agenten (erweiterter Modus).",
+  "endpoint": "https://{AZURE_OPENAI_RESOURCE}.openai.azure.com/",
+  "apiVersion": "2024-08-01-preview",
+  "deployments": {
+    "primary": {
+      "name": "gpt-4o",
+      "model": "gpt-4o",
+      "description": "Hauptmodell für alle Agenten – hohe Qualität, mehrsprachig",
+      "contextWindow": 128000,
+      "maxOutputTokens": 8000
+    },
+    "embeddings": {
+      "name": "text-embedding-3-large",
+      "model": "text-embedding-3-large",
+      "description": "Für semantische Suche in der Wissensbasis",
+      "dimensions": 3072
+    }
+  },
+  "defaultParams": {
+    "temperature": 0.3,
+    "topP": 0.95,
+    "frequencyPenalty": 0.1,
+    "presencePenalty": 0.0
+  },
+  "agentOverrides": {
+    "document-assistant": { "temperature": 0.3, "maxTokens": 4096 },
+    "review-advisor":     { "temperature": 0.2, "maxTokens": 6000 },
+    "audit-prep-agent":   { "temperature": 0.15, "maxTokens": 8000 },
+    "process-optimizer":  { "temperature": 0.35, "maxTokens": 5000 }
+  },
+  "contentFilter": {
+    "enabled": true,
+    "categories": {
+      "hate": "medium",
+      "sexual": "high",
+      "violence": "medium",
+      "selfHarm": "high"
+    }
+  },
+  "responsibleAI": {
+    "groundednessCheck": true,
+    "citation": true,
+    "hallucination": {
+      "mitigation": "low-temperature + RAG",
+      "maxUnsupportedClaims": 0
+    }
+  },
+  "costManagement": {
+    "monthlyBudgetCHF": 200,
+    "alertThreshold": 0.8,
+    "alertEmail": "{QMS_ADMIN_EMAIL}"
+  }
+}

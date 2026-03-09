@@ -1,0 +1,102 @@
+{
+  "name": "QMS – KI Feedback Protokollierung",
+  "description": "Protokolliert Benutzerfeedback (👍/👎) zu KI-Agenten-Antworten in der SharePoint-Liste QMS-KI-Feedback. Ermöglicht regelmässige Qualitätsauswertung durch den QMS-Administrator.",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "HTTP_Request",
+    "description": "Direktaufruf durch SPFx aiAssistant Webpart oder Copilot Studio",
+    "schema": {
+      "type": "object",
+      "required": ["agentId", "messageId", "feedback", "userId", "timestamp"],
+      "properties": {
+        "agentId":    { "type": "string", "enum": ["document-assistant", "review-advisor", "audit-prep-agent", "process-optimizer"] },
+        "messageId":  { "type": "string" },
+        "feedback":   { "type": "string", "enum": ["positive", "negative"] },
+        "comment":    { "type": "string" },
+        "userId":     { "type": "string", "format": "email" },
+        "timestamp":  { "type": "string", "format": "date-time" },
+        "context":    { "type": "string", "description": "Optionaler Kontext: Dokumentname, Prozess etc." }
+      }
+    }
+  },
+  "variables": [
+    { "name": "AgentId",    "value": "@triggerBody()?['agentId']" },
+    { "name": "MessageId",  "value": "@triggerBody()?['messageId']" },
+    { "name": "Feedback",   "value": "@triggerBody()?['feedback']" },
+    { "name": "Comment",    "value": "@triggerBody()?['comment']" },
+    { "name": "UserId",     "value": "@triggerBody()?['userId']" },
+    { "name": "Timestamp",  "value": "@triggerBody()?['timestamp']" },
+    { "name": "Context",    "value": "@triggerBody()?['context']" }
+  ],
+  "actions": [
+    {
+      "id": "ensure_feedback_list",
+      "type": "Condition",
+      "description": "Prüft ob Feedback-Liste existiert (Fehlertoleranz)",
+      "expression": "@not(empty(variables('UserId')))",
+      "ifFalse": [
+        {
+          "id": "terminate_invalid",
+          "type": "Terminate",
+          "status": "Failed",
+          "message": "Ungültige Feedback-Payload – userId fehlt."
+        }
+      ]
+    },
+    {
+      "id": "create_feedback_entry",
+      "type": "SharePoint_CreateItem",
+      "description": "Feedback in QMS-KI-Feedback Liste speichern",
+      "siteUrl": "{QMS_SITE_URL}",
+      "listName": "QMS-KI-Feedback",
+      "fields": {
+        "Title":            "@{variables('AgentId')} – @{variables('Feedback')} – @{formatDateTime(variables('Timestamp'), 'dd.MM.yyyy')}",
+        "QMSKIAgentId":     "@{variables('AgentId')}",
+        "QMSKIMessageId":   "@{variables('MessageId')}",
+        "QMSKIFeedback":    "@{variables('Feedback')}",
+        "QMSKIKommentar":   "@{variables('Comment')}",
+        "QMSKIUserId":      "@{variables('UserId')}",
+        "QMSKITimestamp":   "@{variables('Timestamp')}",
+        "QMSKIKontext":     "@{variables('Context')}"
+      }
+    },
+    {
+      "id": "check_negative_threshold",
+      "type": "Condition",
+      "description": "Prüft ob negative Feedbacks einen Schwellenwert überschreiten (wöchentliche Eskalation)",
+      "expression": "@equals(variables('Feedback'), 'negative')",
+      "ifTrue": [
+        {
+          "id": "get_weekly_negative_count",
+          "type": "SharePoint_GetItems",
+          "siteUrl": "{QMS_SITE_URL}",
+          "listName": "QMS-KI-Feedback",
+          "query": "<View><Query><Where><And><Eq><FieldRef Name='QMSKIAgentId'/><Value Type='Text'>@{variables('AgentId')}</Value></Eq><And><Eq><FieldRef Name='QMSKIFeedback'/><Value Type='Text'>negative</Value></Eq><Geq><FieldRef Name='Created'/><Value Type='DateTime'><Today OffsetDays='-7'/></Value></Geq></And></And></Where></Query></View>"
+        },
+        {
+          "id": "escalate_if_many_negatives",
+          "type": "Condition",
+          "expression": "@greaterOrEquals(length(outputs('get_weekly_negative_count')?['body/value']), 10)",
+          "ifTrue": [
+            {
+              "id": "notify_admin_quality",
+              "type": "SendEmail",
+              "to": "{QMS_ADMIN_EMAIL}",
+              "subject": "KI-Agent Qualitätswarnung: @{variables('AgentId')}",
+              "body": "Der KI-Agent '@{variables('AgentId')}' hat in den letzten 7 Tagen mehr als 10 negative Bewertungen erhalten.\n\nBitte prüfen Sie die Wissensbasis und System-Prompts:\n- Neue Dokumente indizieren\n- Veraltete Dokumente entfernen\n- System-Prompt anpassen\n\nKI-Feedback Auswertung: {QMS_SITE_URL}/Lists/QMS-KI-Feedback"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "respond_success",
+      "type": "HTTP_Response",
+      "statusCode": 200,
+      "body": {
+        "status": "recorded",
+        "feedbackId": "@{outputs('create_feedback_entry')?['body/ID']}"
+      }
+    }
+  ]
+}

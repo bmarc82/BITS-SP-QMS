@@ -1,0 +1,93 @@
+{
+  "schema": "copilot-studio/agent/v1",
+  "name": "QMS Audit-Vorbereitungs-Agent",
+  "description": "Bereitet ISO 9001:2015-Audits vor: Kapitel-Mapping, Nachweislisten, Lückenerkennung und Audit-Fragenkatalog.",
+  "version": "1.0.0",
+  "language": "de-CH",
+  "persona": {
+    "name": "QMS Audit-Vorbereitungs-Agent",
+    "welcomeMessage": "Guten Tag! Ich unterstütze Sie bei der Vorbereitung auf interne und externe ISO 9001:2015-Audits.\n\nIch kann:\n• Eine Kapitelabdeckungsübersicht erstellen\n• Fehlende Nachweise identifizieren\n• Einen Audit-Fragenkatalog generieren\n\nFür welchen Auditscope soll ich die Vorbereitung starten?"
+  },
+  "systemPrompt": {
+    "file": "prompts/system-prompt.md"
+  },
+  "model": {
+    "provider": "azure-openai",
+    "deployment": "gpt-4o",
+    "temperature": 0.15,
+    "maxTokens": 8000,
+    "topP": 0.9
+  },
+  "knowledgeBase": {
+    "sources": [
+      {
+        "type": "sharepoint",
+        "config": "../../integrations/sharepoint-connector/connector-config.json",
+        "description": "Alle freigegebenen QMS-Dokumente für Kapitel-Mapping"
+      },
+      {
+        "type": "file",
+        "path": "../../agents/document-assistant/knowledge-base/iso-9001-reference.md",
+        "description": "Vollständige ISO 9001:2015 Normreferenz"
+      }
+    ]
+  },
+  "topics": [
+    {
+      "id": "generate-coverage-matrix",
+      "name": "Kapitelabdeckung erstellen",
+      "triggerPhrases": [
+        "Audit vorbereiten",
+        "Kapitelabdeckung",
+        "ISO Mapping",
+        "Nachweisliste",
+        "was fehlt"
+      ],
+      "actions": [
+        { "type": "fetchAllDocuments", "filter": "QMSStatus eq 'Freigegeben'" },
+        { "type": "mapToISOChapters" },
+        { "type": "identifyGaps" },
+        { "type": "generateCoverageReport" }
+      ]
+    },
+    {
+      "id": "generate-question-catalog",
+      "name": "Fragenkatalog erstellen",
+      "triggerPhrases": [
+        "Auditorenfragen",
+        "Fragenkatalog",
+        "Fragen vorbereiten",
+        "Audit-Simulation"
+      ],
+      "actions": [
+        { "type": "selectISOChapters" },
+        { "type": "generateQuestions", "perspective": "auditor" }
+      ]
+    },
+    {
+      "id": "check-due-reviews",
+      "name": "Fällige Überprüfungen prüfen",
+      "triggerPhrases": [
+        "überfällige Dokumente",
+        "Überprüfungsfrist",
+        "abgelaufen"
+      ],
+      "actions": [
+        { "type": "querySharePoint",
+          "query": "QMSNaechstesPruefDatum le today() and QMSStatus eq 'Freigegeben'" },
+        { "type": "presentDueDocuments" }
+      ]
+    }
+  ],
+  "publishTargets": ["teams"],
+  "security": {
+    "allowedGroups": ["QMS-Freigeber", "QMS-Administratoren"],
+    "dataAccess": "read-only",
+    "allowedDocumentStatus": ["Freigegeben"]
+  },
+  "feedback": {
+    "enabled": true,
+    "flowUrl": "{FEEDBACK_FLOW_URL}",
+    "sharePointList": "QMS-KI-Feedback"
+  }
+}

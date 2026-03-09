@@ -1,0 +1,237 @@
+.assistantRoot {
+  font-family: "Segoe UI", sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+  border: 1px solid #edebe9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+// Agent selector bar
+.agentBar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #edebe9;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.agentBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #c8c6c4;
+  border-radius: 16px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #323130;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: #0078d4;
+    color: #0078d4;
+    background: #f0f6ff;
+  }
+
+  &.active {
+    border-color: #0078d4;
+    background: #0078d4;
+    color: #fff;
+  }
+
+  .agentIcon { font-size: 16px; }
+}
+
+// Chat area
+.chatArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.welcomeBox {
+  text-align: center;
+  padding: 32px 16px;
+  color: #605e5c;
+
+  .welcomeIcon { font-size: 40px; margin-bottom: 12px; }
+  h3 { font-size: 16px; font-weight: 600; color: #323130; margin: 0 0 8px; }
+  p  { font-size: 13px; margin: 0; line-height: 1.5; }
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  max-width: 85%;
+
+  &.user    { align-self: flex-end; flex-direction: row-reverse; }
+  &.assistant { align-self: flex-start; }
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+
+  &.user      { background: #0078d4; color: #fff; font-size: 13px; font-weight: 600; }
+  &.assistant { background: #f3f2f1; }
+}
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+
+  .user &    { background: #0078d4; color: #fff; border-radius: 8px 2px 8px 8px; }
+  .assistant & { background: #f3f2f1; color: #323130; border-radius: 2px 8px 8px 8px; }
+}
+
+.bubbleMeta {
+  font-size: 11px;
+  color: #8a8886;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .user & { justify-content: flex-end; }
+}
+
+.feedbackBtns {
+  display: flex;
+  gap: 4px;
+
+  button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    opacity: 0.5;
+    transition: opacity 0.1s;
+
+    &:hover, &.active { opacity: 1; }
+  }
+}
+
+.citations {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e8f0fe;
+  border-radius: 4px;
+  border-left: 3px solid #0078d4;
+
+  h4 {
+    font-size: 11px;
+    font-weight: 600;
+    color: #0078d4;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  a {
+    display: block;
+    font-size: 12px;
+    color: #0078d4;
+    text-decoration: none;
+    padding: 2px 0;
+
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.typingIndicator {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #f3f2f1;
+  border-radius: 2px 8px 8px 8px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #8a8886;
+    animation: typing 1.4s infinite;
+
+    &:nth-child(2) { animation-delay: 0.2s; }
+    &:nth-child(3) { animation-delay: 0.4s; }
+  }
+}
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%           { transform: translateY(-6px); opacity: 1; }
+}
+
+// Input area
+.inputArea {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #edebe9;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.inputField {
+  flex: 1;
+  border: 1px solid #c8c6c4;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: "Segoe UI", sans-serif;
+  resize: none;
+  outline: none;
+  min-height: 38px;
+  max-height: 100px;
+
+  &:focus { border-color: #0078d4; }
+}
+
+.sendBtn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 4px;
+  background: #0078d4;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+
+  &:hover    { background: #106ebe; }
+  &:disabled { background: #c8c6c4; cursor: not-allowed; }
+}
+
+.disclaimer {
+  padding: 6px 16px;
+  font-size: 11px;
+  color: #8a8886;
+  text-align: center;
+  border-top: 1px solid #edebe9;
+  background: #faf9f8;
+  flex-shrink: 0;
+}

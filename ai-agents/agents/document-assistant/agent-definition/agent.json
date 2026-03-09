@@ -1,0 +1,104 @@
+{
+  "schema": "copilot-studio/agent/v1",
+  "name": "QMS Dokumenten-Assistent",
+  "description": "Unterstützt Process Owner beim Erstellen strukturierter ISO 9001:2015-konformer QMS-Prozessdokumente.",
+  "version": "1.0.0",
+  "language": "de-CH",
+  "persona": {
+    "name": "QMS Dokumenten-Assistent",
+    "icon": "document-assistant-icon.png",
+    "welcomeMessage": "Hallo! Ich bin Ihr QMS Dokumenten-Assistent. Beschreiben Sie mir einen Prozess in eigenen Worten – ich helfe Ihnen, daraus ein strukturiertes ISO 9001:2015-konformes Dokument zu erstellen.\n\nWas möchten Sie dokumentieren?"
+  },
+  "systemPrompt": {
+    "file": "prompts/system-prompt.md"
+  },
+  "model": {
+    "provider": "azure-openai",
+    "deployment": "gpt-4o",
+    "temperature": 0.3,
+    "maxTokens": 4096,
+    "topP": 0.95
+  },
+  "knowledgeBase": {
+    "sources": [
+      {
+        "type": "sharepoint",
+        "config": "../../integrations/sharepoint-connector/connector-config.json",
+        "description": "Freigegebene QMS-Dokumente als Vorlagen und Referenz"
+      },
+      {
+        "type": "file",
+        "path": "knowledge-base/iso-9001-reference.md",
+        "description": "ISO 9001:2015 Normtext-Referenz"
+      },
+      {
+        "type": "file",
+        "path": "knowledge-base/qms-glossar.md",
+        "description": "QMS-Fachbegriffe und Definitionen"
+      },
+      {
+        "type": "file",
+        "path": "knowledge-base/document-templates.md",
+        "description": "Unternehmensvorlagen und Musterstrukturen"
+      }
+    ]
+  },
+  "topics": [
+    {
+      "id": "create-process-document",
+      "name": "Prozessdokument erstellen",
+      "triggerPhrases": [
+        "neues Dokument erstellen",
+        "Prozess beschreiben",
+        "Prozessbeschreibung",
+        "Arbeitsanweisung erstellen",
+        "Formular erstellen"
+      ],
+      "actions": [
+        { "type": "collectInput", "prompt": "Beschreiben Sie den Prozess in eigenen Worten. Was ist der Zweck? Welche Schritte gibt es? Wer ist beteiligt?" },
+        { "type": "generateDocument", "template": "process-description" },
+        { "type": "showAdaptiveCard", "card": "document-preview" },
+        { "type": "offerSaveToSharePoint" }
+      ]
+    },
+    {
+      "id": "find-similar-document",
+      "name": "Ähnliches Dokument suchen",
+      "triggerPhrases": [
+        "gibt es schon ein Dokument",
+        "ähnlicher Prozess",
+        "Vorlage suchen",
+        "Referenzdokument"
+      ],
+      "actions": [
+        { "type": "searchKnowledgeBase" },
+        { "type": "presentResults", "maxResults": 5 }
+      ]
+    },
+    {
+      "id": "explain-iso-clause",
+      "name": "ISO-Kapitel erklären",
+      "triggerPhrases": [
+        "ISO Kapitel",
+        "Was bedeutet",
+        "Norm Anforderung",
+        "ISO 9001"
+      ],
+      "actions": [
+        { "type": "lookupISOReference" },
+        { "type": "explainInContext" }
+      ]
+    }
+  ],
+  "publishTargets": ["teams", "sharepoint-webpart"],
+  "security": {
+    "allowedGroups": ["QMS-Ersteller", "QMS-Prozessverantwortliche", "QMS-Freigeber", "QMS-Administratoren"],
+    "dataAccess": "read-only",
+    "allowedDocumentStatus": ["Freigegeben"]
+  },
+  "feedback": {
+    "enabled": true,
+    "flowUrl": "{FEEDBACK_FLOW_URL}",
+    "sharePointList": "QMS-KI-Feedback"
+  }
+}

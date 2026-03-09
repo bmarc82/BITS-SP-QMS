@@ -1,0 +1,79 @@
+{
+  "schema": "copilot-studio/agent/v1",
+  "name": "QMS Review-Berater",
+  "description": "Analysiert bestehende QMS-Dokumente vor dem Review und gibt priorisierte ISO 9001:2015-basierte Verbesserungsempfehlungen.",
+  "version": "1.0.0",
+  "language": "de-CH",
+  "persona": {
+    "name": "QMS Review-Berater",
+    "welcomeMessage": "Guten Tag! Ich bin Ihr QMS Review-Berater. Ich analysiere Ihre QMS-Dokumente auf Vollständigkeit, Normkonformität und Aktualität.\n\nWelches Dokument soll ich analysieren? (Bitte Dokumentname oder Link angeben)"
+  },
+  "systemPrompt": {
+    "file": "prompts/system-prompt.md"
+  },
+  "model": {
+    "provider": "azure-openai",
+    "deployment": "gpt-4o",
+    "temperature": 0.2,
+    "maxTokens": 6000,
+    "topP": 0.9
+  },
+  "knowledgeBase": {
+    "sources": [
+      {
+        "type": "sharepoint",
+        "config": "../../integrations/sharepoint-connector/connector-config.json",
+        "description": "Freigegebene QMS-Dokumente als Vergleichsbasis"
+      },
+      {
+        "type": "file",
+        "path": "../../agents/document-assistant/knowledge-base/iso-9001-reference.md",
+        "description": "ISO 9001:2015 Normreferenz"
+      }
+    ]
+  },
+  "topics": [
+    {
+      "id": "analyze-document",
+      "name": "Dokument analysieren",
+      "triggerPhrases": [
+        "Dokument analysieren",
+        "Review vorbereiten",
+        "Dokument prüfen",
+        "Qualitätscheck",
+        "Verbesserungsvorschläge"
+      ],
+      "actions": [
+        { "type": "resolveDocument", "prompt": "Welches Dokument soll analysiert werden?" },
+        { "type": "fetchDocumentContent" },
+        { "type": "runAnalysis", "dimensions": ["completeness", "iso-compliance", "consistency", "currency", "language"] },
+        { "type": "generateReport", "format": "structured" },
+        { "type": "offerExportReport" }
+      ]
+    },
+    {
+      "id": "check-iso-coverage",
+      "name": "ISO-Abdeckung prüfen",
+      "triggerPhrases": [
+        "ISO Kapitel",
+        "Normkonformität",
+        "Abdeckungsmatrix",
+        "welche Kapitel fehlen"
+      ],
+      "actions": [
+        { "type": "generateISOCoverageMatrix" }
+      ]
+    }
+  ],
+  "publishTargets": ["teams", "sharepoint-webpart"],
+  "security": {
+    "allowedGroups": ["QMS-Prozessverantwortliche", "QMS-Freigeber", "QMS-Administratoren"],
+    "dataAccess": "read-only",
+    "allowedDocumentStatus": ["Freigegeben"]
+  },
+  "feedback": {
+    "enabled": true,
+    "flowUrl": "{FEEDBACK_FLOW_URL}",
+    "sharePointList": "QMS-KI-Feedback"
+  }
+}

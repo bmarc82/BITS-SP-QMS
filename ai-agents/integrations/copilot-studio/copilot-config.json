@@ -1,0 +1,87 @@
+{
+  "schema": "qms/copilot-studio/v1",
+  "description": "Microsoft Copilot Studio Konfiguration für alle QMS KI-Agenten.",
+  "environment": "{POWER_PLATFORM_ENVIRONMENT_ID}",
+  "agents": [
+    {
+      "agentId": "qms-document-assistant",
+      "definitionFile": "../../agents/document-assistant/agent-definition/agent.json",
+      "copilotStudioConfig": {
+        "displayName": "QMS Dokumenten-Assistent",
+        "icon": "📋",
+        "publishChannels": ["teams", "sharepoint"],
+        "teamsConfig": {
+          "appId": "{TEAMS_APP_ID_DOCUMENT_ASSISTANT}",
+          "botId":  "{BOT_ID_DOCUMENT_ASSISTANT}",
+          "scope":  ["personal", "team"],
+          "tabName": "Dokument erstellen"
+        },
+        "sharepointConfig": {
+          "webpartId": "qms-ai-assistant",
+          "defaultAgent": "document-assistant"
+        }
+      }
+    },
+    {
+      "agentId": "qms-review-advisor",
+      "definitionFile": "../../agents/review-advisor/agent-definition/agent.json",
+      "copilotStudioConfig": {
+        "displayName": "QMS Review-Berater",
+        "icon": "🔍",
+        "publishChannels": ["teams", "sharepoint"],
+        "teamsConfig": {
+          "appId": "{TEAMS_APP_ID_REVIEW_ADVISOR}",
+          "botId":  "{BOT_ID_REVIEW_ADVISOR}",
+          "scope":  ["personal"],
+          "tabName": "Review-Analyse"
+        }
+      }
+    },
+    {
+      "agentId": "qms-audit-prep",
+      "definitionFile": "../../agents/audit-prep-agent/agent-definition/agent.json",
+      "copilotStudioConfig": {
+        "displayName": "QMS Audit-Vorbereitung",
+        "icon": "✅",
+        "publishChannels": ["teams"],
+        "teamsConfig": {
+          "appId": "{TEAMS_APP_ID_AUDIT_PREP}",
+          "botId":  "{BOT_ID_AUDIT_PREP}",
+          "scope":  ["team"],
+          "tabName": "Audit-Vorbereitung"
+        }
+      }
+    },
+    {
+      "agentId": "qms-process-optimizer",
+      "definitionFile": "../../agents/process-optimizer/agent-definition/agent.json",
+      "copilotStudioConfig": {
+        "displayName": "QMS Prozess-Optimierer",
+        "icon": "⚡",
+        "publishChannels": ["teams", "sharepoint"],
+        "teamsConfig": {
+          "appId": "{TEAMS_APP_ID_PROCESS_OPTIMIZER}",
+          "botId":  "{BOT_ID_PROCESS_OPTIMIZER}",
+          "scope":  ["personal", "team"],
+          "tabName": "KVP & Optimierung"
+        }
+      }
+    }
+  ],
+  "sharedConfig": {
+    "dataLossPrevention": {
+      "policy": "QMS-DLP-Policy",
+      "blockExternalSending": true
+    },
+    "auditLogging": {
+      "enabled": true,
+      "destination": "Microsoft Purview",
+      "retentionDays": 365
+    },
+    "feedbackCollection": {
+      "enabled": true,
+      "sharePointList": "QMS-KI-Feedback",
+      "siteUrl": "{QMS_SITE_URL}"
+    }
+  }
+}

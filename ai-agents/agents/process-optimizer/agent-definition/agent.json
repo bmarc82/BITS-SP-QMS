@@ -1,0 +1,108 @@
+{
+  "schema": "copilot-studio/agent/v1",
+  "name": "QMS Prozess-Optimierer",
+  "description": "Analysiert Prozesse anhand von KPI-Daten und Feedback, erstellt PDCA-Massnahmenpläne und kann KVP-Einträge in SharePoint vorschlagen.",
+  "version": "1.0.0",
+  "language": "de-CH",
+  "persona": {
+    "name": "QMS Prozess-Optimierer",
+    "welcomeMessage": "Guten Tag! Ich bin Ihr Prozess-Optimierer. Ich analysiere Prozesse, KPIs und Feedback-Daten und schlage konkrete Verbesserungen im Sinne des PDCA-Zyklus vor.\n\nTeilen Sie mir mit:\n• Welcher Prozess soll analysiert werden?\n• Welche KPI-Daten oder Probleme liegen vor?\n• Gibt es Kundenfeedback oder Audit-Feststellungen?"
+  },
+  "systemPrompt": {
+    "file": "prompts/system-prompt.md"
+  },
+  "model": {
+    "provider": "azure-openai",
+    "deployment": "gpt-4o",
+    "temperature": 0.35,
+    "maxTokens": 5000,
+    "topP": 0.92
+  },
+  "knowledgeBase": {
+    "sources": [
+      {
+        "type": "sharepoint",
+        "config": "../../integrations/sharepoint-connector/connector-config.json",
+        "description": "Freigegebene Prozessbeschreibungen als Vergleichsbasis"
+      },
+      {
+        "type": "sharepoint-list",
+        "listName": "QMS-KVP",
+        "description": "Bestehende KVP-Einträge für Querverweise und Erfahrungswerte",
+        "filter": "QMSStatus eq 'Abgeschlossen'"
+      },
+      {
+        "type": "file",
+        "path": "../../agents/document-assistant/knowledge-base/iso-9001-reference.md",
+        "description": "ISO 9001:2015 Kap. 10 – Verbesserung"
+      }
+    ]
+  },
+  "topics": [
+    {
+      "id": "analyze-process",
+      "name": "Prozess analysieren",
+      "triggerPhrases": [
+        "Prozess verbessern",
+        "Optimierung",
+        "Schwachstelle",
+        "Problem analysieren",
+        "5-Why",
+        "Ursachenanalyse",
+        "KPI unter Ziel"
+      ],
+      "actions": [
+        { "type": "collectContext", "fields": ["processName", "kpiData", "problemDescription", "feedback"] },
+        { "type": "selectAnalysisMethod" },
+        { "type": "runAnalysis" },
+        { "type": "generateImprovementPlan" },
+        { "type": "offerKVPCreation" }
+      ]
+    },
+    {
+      "id": "create-kvp-entry",
+      "name": "KVP-Eintrag erstellen",
+      "triggerPhrases": [
+        "KVP anlegen",
+        "Verbesserungsantrag",
+        "KVP erstellen"
+      ],
+      "actions": [
+        { "type": "collectKVPData" },
+        { "type": "createSharePointItem",
+          "list": "QMS-KVP",
+          "permission": "requires-user-confirmation" }
+      ]
+    },
+    {
+      "id": "benchmark-process",
+      "name": "Prozess vergleichen",
+      "triggerPhrases": [
+        "vergleichen",
+        "Best Practice",
+        "wie machen es andere",
+        "ähnliche Prozesse"
+      ],
+      "actions": [
+        { "type": "searchSimilarProcesses" },
+        { "type": "generateBenchmarkReport" }
+      ]
+    }
+  ],
+  "writePermissions": {
+    "lists": ["QMS-KVP"],
+    "fields": ["Title", "QMSKVPTyp", "QMSQuelle", "QMSBeschreibung", "QMSMassnahme", "QMSPrioritaet"],
+    "requiresUserConfirmation": true
+  },
+  "publishTargets": ["teams", "sharepoint-webpart"],
+  "security": {
+    "allowedGroups": ["QMS-Prozessverantwortliche", "QMS-Freigeber", "QMS-Administratoren"],
+    "dataAccess": "read-write-kvp",
+    "allowedDocumentStatus": ["Freigegeben"]
+  },
+  "feedback": {
+    "enabled": true,
+    "flowUrl": "{FEEDBACK_FLOW_URL}",
+    "sharePointList": "QMS-KI-Feedback"
+  }
+}
