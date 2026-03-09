@@ -1,13 +1,14 @@
 {
-  "name": "QMS Freigabe-Workflow",
-  "description": "Begleitet ein Dokument von Entwurf über Prüfung bis zur Freigabe. Bei Genehmigung wird automatisch ein Eintrag in QMS-Changelog erstellt.",
-  "version": "1.1.0",
+  "name": "QMS Freigabe-Workflow (Hauptversionen)",
+  "description": "Begleitet Hauptversionen (x.0) von Entwurf über Genehmigung bis zur Freigabe. Genehmigt sowohl den QMSStatus als auch den SharePoint Content Approval Status. Bei Genehmigung wird ein Changelog-Eintrag erstellt. Nebenversionen (x.1, x.2) werden durch den separaten 'minor-version-changelog' Flow behandelt.",
+  "version": "1.2.0",
   "trigger": {
     "type": "SharePoint_ItemModified",
     "siteUrl": "{QMS_SITE_URL}",
     "listName": "QMS-Dokumente",
     "conditions": [
-      { "field": "QMSStatus", "equals": "In Prüfung" }
+      { "field": "QMSStatus",      "equals": "In Prüfung" },
+      { "field": "QMSVersionTyp",  "equals": "Hauptversion" }
     ]
   },
   "variables": [
@@ -98,14 +99,24 @@
           {
             "id": "update_status_approved",
             "type": "SharePoint_UpdateItem",
-            "description": "Status auf Freigegeben setzen und Metadaten aktualisieren",
+            "description": "QMSStatus auf Freigegeben setzen, Metadaten aktualisieren",
             "siteUrl": "{QMS_SITE_URL}",
             "listName": "QMS-Dokumente",
             "itemId": "@{variables('DokumentId')}",
             "fields": {
-              "QMSStatus":    "Freigegeben",
-              "QMSGueltigAb": "@{utcNow('yyyy-MM-dd')}"
+              "QMSStatus":     "Freigegeben",
+              "QMSVersionTyp": "Hauptversion",
+              "QMSGueltigAb":  "@{utcNow('yyyy-MM-dd')}"
             }
+          },
+          {
+            "id": "approve_content_approval",
+            "type": "HTTP",
+            "description": "SharePoint Content Approval Status auf 'Genehmigt' setzen – macht Hauptversion für alle Leser sichtbar",
+            "method": "POST",
+            "uri": "{QMS_SITE_URL}/_api/web/lists/getbytitle('QMS-Dokumente')/items(@{variables('DokumentId')})/approve(comment='@{outputs('start_approval')?['body/comments']}')",
+            "headers": { "Accept": "application/json", "Content-Type": "application/json" },
+            "authentication": "ManagedIdentity"
           },
           {
             "id": "create_changelog_entry",
@@ -148,11 +159,20 @@
           {
             "id": "update_status_rejected",
             "type": "SharePoint_UpdateItem",
-            "description": "Status zurück auf Entwurf",
+            "description": "QMSStatus zurück auf Entwurf, Content Approval ablehnen",
             "siteUrl": "{QMS_SITE_URL}",
             "listName": "QMS-Dokumente",
             "itemId": "@{variables('DokumentId')}",
             "fields": { "QMSStatus": "Entwurf" }
+          },
+          {
+            "id": "reject_content_approval",
+            "type": "HTTP",
+            "description": "SharePoint Content Approval Status auf 'Abgelehnt' setzen",
+            "method": "POST",
+            "uri": "{QMS_SITE_URL}/_api/web/lists/getbytitle('QMS-Dokumente')/items(@{variables('DokumentId')})/reject(comment='@{outputs('start_approval')?['body/comments']}')",
+            "headers": { "Accept": "application/json", "Content-Type": "application/json" },
+            "authentication": "ManagedIdentity"
           },
           {
             "id": "notify_rejected",

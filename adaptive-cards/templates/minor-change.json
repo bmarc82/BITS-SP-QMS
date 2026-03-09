@@ -5,10 +5,10 @@
   "body": [
     {
       "type": "TextBlock",
-      "text": "Hauptversion einreichen",
+      "text": "Nebenversion dokumentieren",
       "size": "Large",
       "weight": "Bolder",
-      "color": "Accent"
+      "color": "Default"
     },
     {
       "type": "TextBlock",
@@ -19,7 +19,7 @@
     },
     {
       "type": "TextBlock",
-      "text": "Diese Hauptversion wird zur Genehmigung eingereicht. Nach Genehmigung ist das Dokument für alle Leser sichtbar.",
+      "text": "Nebenversionen benötigen keine Genehmigung. Die Änderung wird direkt im Changelog dokumentiert. Das Dokument bleibt für Leser in der zuletzt freigegebenen Hauptversion sichtbar.",
       "wrap": true,
       "isSubtle": true,
       "spacing": "Small"
@@ -31,16 +31,16 @@
       "items": [
         {
           "type": "TextBlock",
-          "text": "Neue Hauptversionsnummer *",
+          "text": "Neue Nebenversionsnummer *",
           "weight": "Bolder"
         },
         {
           "type": "Input.Text",
           "id": "version",
-          "placeholder": "z.B. 1.0 / 2.0 / 3.0",
+          "placeholder": "z.B. 1.1 / 1.2 / 2.1",
           "value": "${AktuelleVersion}",
-          "regex": "^\\d+\\.0$",
-          "errorMessage": "Hauptversionen enden auf .0 (z.B. 1.0, 2.0)"
+          "regex": "^\\d+\\.[1-9]\\d*$",
+          "errorMessage": "Nebenversionen enden auf .1, .2 usw. (z.B. 1.1, 2.3)"
         },
         {
           "type": "TextBlock",
@@ -55,44 +55,30 @@
           "isRequired": true,
           "errorMessage": "Bitte Änderungsart auswählen",
           "choices": [
-            { "title": "Erstausgabe",           "value": "Erstausgabe" },
             { "title": "Inhaltliche Änderung",  "value": "Inhaltliche Änderung" },
             { "title": "Formale Korrektur",     "value": "Formale Korrektur" }
           ]
         },
         {
           "type": "TextBlock",
-          "text": "Änderungsbeschreibung *",
+          "text": "Was wurde geändert? *",
           "weight": "Bolder",
           "spacing": "Medium"
         },
         {
           "type": "Input.Text",
           "id": "aenderungsbeschreibung",
-          "placeholder": "Was wurde geändert und warum? Alle seit der letzten Hauptversion vorgenommenen Änderungen zusammenfassen.",
+          "placeholder": "Kurze Beschreibung der vorgenommenen Änderungen",
           "isMultiline": true,
-          "minLength": 20,
+          "minLength": 10,
           "isRequired": true,
-          "errorMessage": "Bitte Änderung beschreiben (mind. 20 Zeichen)"
-        },
-        {
-          "type": "TextBlock",
-          "text": "Freigeber *",
-          "weight": "Bolder",
-          "spacing": "Medium"
-        },
-        {
-          "type": "Input.Text",
-          "id": "freigeber",
-          "placeholder": "E-Mail-Adresse des Freigebers",
-          "isRequired": true,
-          "errorMessage": "Freigeber ist Pflichtfeld"
+          "errorMessage": "Bitte Änderung beschreiben (mind. 10 Zeichen)"
         }
       ]
     },
     {
       "type": "TextBlock",
-      "text": "ℹ️ Nach Einreichung ist das Dokument als Entwurf gesperrt bis zur Genehmigung.",
+      "text": "ℹ️ Die Nebenversion ist sofort für Freigeber und den Autor sichtbar. Leser sehen weiterhin die letzte genehmigte Hauptversion.",
       "wrap": true,
       "isSubtle": true,
       "spacing": "Medium",
@@ -102,11 +88,11 @@
   "actions": [
     {
       "type": "Action.Submit",
-      "title": "Hauptversion zur Freigabe einreichen",
+      "title": "Änderung dokumentieren",
       "style": "positive",
       "data": {
-        "action": "submitMajorVersion",
-        "versionTyp": "Hauptversion",
+        "action": "documentMinorVersion",
+        "versionTyp": "Nebenversion",
         "dokumentId": "${DokumentId}",
         "dokumentUrl": "${DokumentUrl}"
       }

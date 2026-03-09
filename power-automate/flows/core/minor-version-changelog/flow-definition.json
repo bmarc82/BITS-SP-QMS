@@ -1,0 +1,87 @@
+{
+  "name": "QMS – Nebenversion dokumentieren",
+  "description": "Erstellt einen Changelog-Eintrag für Nebenversionen (x.1, x.2...) ohne Genehmigungsprozess. Wird durch den SPFx ListView Command Set 'Nebenversion dokumentieren' ausgelöst (HTTP POST).",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "HTTP_Request",
+    "description": "Direktaufruf durch SPFx Command Set oder Power Apps",
+    "schema": {
+      "type": "object",
+      "required": ["dokumentId", "dokumentname", "dokumentUrl", "version", "aenderungsart", "aenderungsbeschreibung", "erstellerEmail"],
+      "properties": {
+        "dokumentId":             { "type": "integer" },
+        "dokumentname":           { "type": "string" },
+        "dokumentUrl":            { "type": "string" },
+        "version":                { "type": "string", "pattern": "^\\d+\\.[1-9]\\d*$" },
+        "aenderungsart":          { "type": "string", "enum": ["Inhaltliche Änderung", "Formale Korrektur"] },
+        "aenderungsbeschreibung": { "type": "string", "minLength": 10 },
+        "erstellerEmail":         { "type": "string", "format": "email" },
+        "prozess":                { "type": "string" },
+        "bereich":                { "type": "string" }
+      }
+    }
+  },
+  "actions": [
+
+    {
+      "id": "validate_minor_version",
+      "type": "Condition",
+      "description": "Sicherstellen dass es sich um eine Nebenversion handelt (nicht .0)",
+      "expression": "@not(endsWith(triggerBody()?['version'], '.0'))",
+      "ifFalse": [
+        {
+          "id": "terminate_not_minor",
+          "type": "Terminate",
+          "status": "Failed",
+          "message": "Versionsnummer endet auf .0 – bitte den Hauptversions-Workflow verwenden."
+        }
+      ]
+    },
+
+    {
+      "id": "update_document_metadata",
+      "type": "SharePoint_UpdateItem",
+      "description": "Versionsfelder am Dokument aktualisieren",
+      "siteUrl": "{QMS_SITE_URL}",
+      "listName": "QMS-Dokumente",
+      "itemId": "@{triggerBody()?['dokumentId']}",
+      "fields": {
+        "QMSVersion":               "@{triggerBody()?['version']}",
+        "QMSVersionTyp":            "Nebenversion",
+        "QMSAenderungsart":         "@{triggerBody()?['aenderungsart']}",
+        "QMSAenderungsbeschreibung":"@{triggerBody()?['aenderungsbeschreibung']}"
+      }
+    },
+
+    {
+      "id": "create_changelog_entry",
+      "type": "SharePoint_CreateItem",
+      "description": "Changelog-Eintrag ohne Genehmigung erstellen",
+      "siteUrl": "{QMS_SITE_URL}",
+      "listName": "QMS-Changelog",
+      "fields": {
+        "Title":                    "@{triggerBody()?['dokumentname']}",
+        "QMSVersion":               "@{triggerBody()?['version']}",
+        "QMSAenderungsart":         "@{triggerBody()?['aenderungsart']}",
+        "QMSAenderungsbeschreibung":"@{triggerBody()?['aenderungsbeschreibung']}",
+        "QMSDokumentId":            "@{triggerBody()?['dokumentId']}",
+        "QMSDokumentUrl":           "@{triggerBody()?['dokumentUrl']}",
+        "QMSErsteller":             "@{triggerBody()?['erstellerEmail']}",
+        "QMSFreigeber":             null,
+        "QMSFreigegebenAm":         null,
+        "QMSFreigabeKommentar":     "Nebenversion – keine Genehmigung erforderlich"
+      }
+    },
+
+    {
+      "id": "respond_success",
+      "type": "HTTP_Response",
+      "statusCode": 200,
+      "body": {
+        "status": "documented",
+        "version": "@{triggerBody()?['version']}",
+        "changelogId": "@{outputs('create_changelog_entry')?['body/ID']}"
+      }
+    }
+  ]
+}

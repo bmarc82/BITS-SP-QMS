@@ -143,6 +143,46 @@ Describe '03 – Dokumentenbibliothek' {
         $f = Get-PnPField -List 'QMS-Dokumente' -Identity 'QMSStatus' -Includes Choices
         $f.Choices | Should -Contain 'Freigegeben'
     }
+
+    It 'QMSVersionTyp Feld vorhanden' {
+        $f = Get-PnPField -List 'QMS-Dokumente' -Identity 'QMSVersionTyp' -ErrorAction SilentlyContinue
+        $f | Should -Not -BeNullOrEmpty
+    }
+
+    It 'QMSVersionTyp hat Werte Hauptversion und Nebenversion' {
+        $f = Get-PnPField -List 'QMS-Dokumente' -Identity 'QMSVersionTyp' -Includes Choices
+        $f.Choices | Should -Contain 'Hauptversion'
+        $f.Choices | Should -Contain 'Nebenversion'
+    }
+}
+
+Describe '03b – Versioning und Content Approval' {
+
+    It 'Haupt- und Nebenversionen aktiviert' {
+        $list = Get-PnPList -Identity 'QMS-Dokumente' -Includes EnableVersioning, EnableMinorVersions
+        $list.EnableVersioning    | Should -Be $true
+        $list.EnableMinorVersions | Should -Be $true
+    }
+
+    It 'Content Approval (Moderation) aktiviert' {
+        $list = Get-PnPList -Identity 'QMS-Dokumente' -Includes EnableModeration
+        $list.EnableModeration | Should -Be $true
+    }
+
+    It 'Entwürfe nur sichtbar für Freigeber (DraftVersionVisibility = 2)' {
+        $list = Get-PnPList -Identity 'QMS-Dokumente' -Includes DraftVersionVisibility
+        [int]$list.DraftVersionVisibility | Should -Be 2
+    }
+
+    It 'Kein Auschecken erforderlich' {
+        $list = Get-PnPList -Identity 'QMS-Dokumente' -Includes ForceCheckout
+        $list.ForceCheckout | Should -Be $false
+    }
+
+    It 'Hauptversionen aufbewahrt (MajorVersionLimit >= 10)' {
+        $list = Get-PnPList -Identity 'QMS-Dokumente' -Includes MajorVersionLimit
+        $list.MajorVersionLimit | Should -BeGreaterOrEqual 10
+    }
 }
 
 # ── Prozesslandkarte ──────────────────────────────────────────────────────────
