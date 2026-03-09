@@ -284,3 +284,147 @@ Describe '04b – Changelog' {
         $f | Should -Not -BeNullOrEmpty
     }
 }
+
+# ── KVP (Kontinuierlicher Verbesserungsprozess) ────────────────────────────────
+
+Describe '04c – KVP-Liste (ISO 9001:2015 Kap. 10.3)' {
+
+    It 'Liste "QMS-KVP" existiert' {
+        $list = Get-PnPList -Identity 'QMS-KVP' -ErrorAction SilentlyContinue
+        $list | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Versionierung ist aktiviert' {
+        $list = Get-PnPList -Identity 'QMS-KVP'
+        $list.EnableVersioning | Should -Be $true
+    }
+
+    # Klassifizierung
+    $classificationFields = @('QMSKVPTyp', 'QMSQuelle', 'QMSPrioritaet')
+    foreach ($field in $classificationFields) {
+        It "Klassifizierungsspalte vorhanden: $field" {
+            $f = Get-PnPField -List 'QMS-KVP' -Identity $field -ErrorAction SilentlyContinue
+            $f | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'QMSKVPTyp enthält "Verbesserungsidee"' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSKVPTyp' -Includes Choices
+        $f.Choices | Should -Contain 'Verbesserungsidee'
+    }
+
+    It 'QMSKVPTyp enthält "Korrekturmaßnahme"' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSKVPTyp' -Includes Choices
+        $f.Choices | Should -Contain 'Korrekturmaßnahme'
+    }
+
+    It 'QMSKVPTyp enthält "Auditfeststellung"' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSKVPTyp' -Includes Choices
+        $f.Choices | Should -Contain 'Auditfeststellung'
+    }
+
+    It 'QMSQuelle enthält ISO-Referenzen' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSQuelle' -Includes Choices
+        $f.Choices | Should -Contain 'Internes Audit (ISO 9.2)'
+        $f.Choices | Should -Contain 'Managementbewertung (ISO 9.3)'
+        $f.Choices | Should -Contain 'Kundenfeedback (ISO 9.1.2)'
+    }
+
+    # Managed Metadata Felder
+    It 'QMSBereich ist ein Managed Metadata Feld' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSBereich' -ErrorAction SilentlyContinue
+        $f | Should -Not -BeNullOrEmpty
+        $f.TypeAsString | Should -Be 'TaxonomyFieldType'
+    }
+
+    It 'QMSProzess ist ein Managed Metadata Feld (MultiValue)' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSProzess' -ErrorAction SilentlyContinue
+        $f | Should -Not -BeNullOrEmpty
+        $f.TypeAsString | Should -Be 'TaxonomyFieldTypeMulti'
+    }
+
+    # PDCA-Status-Feld
+    It 'QMSStatus (PDCA) vorhanden und enthält alle Zykluswerte' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSStatus' -Includes Choices
+        $f | Should -Not -BeNullOrEmpty
+        $f.Choices | Should -Contain 'Offen'
+        $f.Choices | Should -Contain 'Massnahme definiert'
+        $f.Choices | Should -Contain 'In Bearbeitung'
+        $f.Choices | Should -Contain 'Wirksamkeitsprüfung'
+        $f.Choices | Should -Contain 'Abgeschlossen'
+        $f.Choices | Should -Contain 'Abgelehnt'
+    }
+
+    It 'QMSStatus hat Standardwert "Offen"' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSStatus' -Includes DefaultValue
+        $f.DefaultValue | Should -Be 'Offen'
+    }
+
+    # Fortschritt-Feld
+    It 'QMSFortschritt ist ein Number-Feld (0–100)' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSFortschritt' -ErrorAction SilentlyContinue
+        $f | Should -Not -BeNullOrEmpty
+        $f.TypeAsString | Should -Be 'Number'
+    }
+
+    # PDCA-Felder komplett
+    $pdcaFields = @(
+        'QMSBeschreibung', 'QMSZielzustand', 'QMSUrsache', 'QMSMassnahme',
+        'QMSVerantwortlicher', 'QMSErfasser', 'QMSZieldatum',
+        'QMSWirksamkeitsbeschreibung', 'QMSWirksamkeitsdatum',
+        'QMSWirksamkeitsstatus', 'QMSWirksamkeitsprueferIn',
+        'QMSAbgeschlossenAm', 'QMSVerknuepfteDokumente', 'QMSISOKapitel'
+    )
+    foreach ($field in $pdcaFields) {
+        It "PDCA-Spalte vorhanden: $field" {
+            $f = Get-PnPField -List 'QMS-KVP' -Identity $field -ErrorAction SilentlyContinue
+            $f | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    # Wirksamkeitsstatus
+    It 'QMSWirksamkeitsstatus enthält alle Beurteilungswerte' {
+        $f = Get-PnPField -List 'QMS-KVP' -Identity 'QMSWirksamkeitsstatus' -Includes Choices
+        $f.Choices | Should -Contain 'Ausstehend'
+        $f.Choices | Should -Contain 'Wirksam'
+        $f.Choices | Should -Contain 'Nicht wirksam – neue Massnahme erforderlich'
+    }
+
+    # Ansichten
+    It 'Ansicht "Offene KVP" existiert' {
+        $view = Get-PnPView -List 'QMS-KVP' -Identity 'Offene KVP' -ErrorAction SilentlyContinue
+        $view | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Ansicht "Wirksamkeitsprüfung" existiert' {
+        $view = Get-PnPView -List 'QMS-KVP' -Identity 'Wirksamkeitsprüfung' -ErrorAction SilentlyContinue
+        $view | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Ansicht "Nach Bereich" existiert' {
+        $view = Get-PnPView -List 'QMS-KVP' -Identity 'Nach Bereich' -ErrorAction SilentlyContinue
+        $view | Should -Not -BeNullOrEmpty
+    }
+
+    # Berechtigungen
+    It 'QMS-Leser haben Lesezugriff auf QMS-KVP' {
+        $perms = Get-PnPListPermissions -Identity 'QMS-KVP'
+        $leserPerm = $perms | Where-Object { $_.Member.Title -eq 'QMS-Leser' }
+        $leserPerm | Should -Not -BeNullOrEmpty
+        $leserPerm.RoleDefinitionBindings.Name | Should -Contain 'Read'
+    }
+
+    It 'QMS-Ersteller haben Contribute-Zugriff auf QMS-KVP' {
+        $perms = Get-PnPListPermissions -Identity 'QMS-KVP'
+        $erstellerPerm = $perms | Where-Object { $_.Member.Title -eq 'QMS-Ersteller' }
+        $erstellerPerm | Should -Not -BeNullOrEmpty
+        $erstellerPerm.RoleDefinitionBindings.Name | Should -Contain 'Contribute'
+    }
+
+    It 'QMS-Administratoren haben Vollzugriff auf QMS-KVP' {
+        $perms = Get-PnPListPermissions -Identity 'QMS-KVP'
+        $adminPerm = $perms | Where-Object { $_.Member.Title -eq 'QMS-Administratoren' }
+        $adminPerm | Should -Not -BeNullOrEmpty
+        $adminPerm.RoleDefinitionBindings.Name | Should -Contain 'Full Control'
+    }
+}

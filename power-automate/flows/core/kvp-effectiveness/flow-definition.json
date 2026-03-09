@@ -1,0 +1,142 @@
+{
+  "name": "QMS – KVP Wirksamkeitsprüfung",
+  "description": "Wird ausgelöst wenn ein KVP-Eintrag auf 'Wirksamkeitsprüfung' gesetzt wird. Sendet eine Adaptive Card an den Prüfer. Bei positiver Beurteilung wird der KVP abgeschlossen, bei negativer Beurteilung wird eine neue Massnahme gefordert.",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "SharePoint_ItemModified",
+    "siteUrl": "{QMS_SITE_URL}",
+    "listName": "QMS-KVP",
+    "conditions": [
+      { "field": "QMSStatus", "equals": "Wirksamkeitsprüfung" }
+    ]
+  },
+  "variables": [
+    { "name": "KVPId",           "value": "@triggerOutputs()?['body/ID']" },
+    { "name": "Titel",           "value": "@triggerOutputs()?['body/Title']" },
+    { "name": "KVPTyp",          "value": "@triggerOutputs()?['body/QMSKVPTyp']" },
+    { "name": "Beschreibung",    "value": "@triggerOutputs()?['body/QMSBeschreibung']" },
+    { "name": "Zielzustand",     "value": "@triggerOutputs()?['body/QMSZielzustand']" },
+    { "name": "Massnahme",       "value": "@triggerOutputs()?['body/QMSMassnahme']" },
+    { "name": "Ursache",         "value": "@triggerOutputs()?['body/QMSUrsache']" },
+    { "name": "PrueferEmail",    "value": "@triggerOutputs()?['body/QMSWirksamkeitsprueferIn/Email']" },
+    { "name": "PrueferName",     "value": "@triggerOutputs()?['body/QMSWirksamkeitsprueferIn/DisplayName']" },
+    { "name": "VerantwortlicherEmail", "value": "@triggerOutputs()?['body/QMSVerantwortlicher/Email']" },
+    { "name": "KVPUrl",          "value": "@triggerOutputs()?['body/{Link}']" }
+  ],
+  "actions": [
+
+    {
+      "id": "check_prufer",
+      "type": "Condition",
+      "description": "Prüfen ob Wirksamkeitsprüfer gesetzt ist",
+      "expression": "@not(empty(variables('PrueferEmail')))",
+      "ifFalse": [
+        {
+          "id": "notify_admin_no_prufer",
+          "type": "SendEmail",
+          "to": "{QMS_ADMIN_EMAIL}",
+          "subject": "KVP Wirksamkeitsprüfung – kein Prüfer gesetzt: @{variables('Titel')}",
+          "body": "KVP #@{variables('KVPId')} wurde auf 'Wirksamkeitsprüfung' gesetzt, aber kein Prüfer (QMSWirksamkeitsprueferIn) definiert.\n\nBitte Prüfer zuweisen: @{variables('KVPUrl')}"
+        },
+        {
+          "id": "terminate_no_prufer",
+          "type": "Terminate",
+          "status": "Failed",
+          "message": "Kein Wirksamkeitsprüfer gesetzt."
+        }
+      ]
+    },
+
+    {
+      "id": "send_effectiveness_card",
+      "type": "PostAdaptiveCardAndWaitForResponse",
+      "description": "Teams Adaptive Card zur Wirksamkeitsbeurteilung an Prüfer senden",
+      "recipient": "@{variables('PrueferEmail')}",
+      "adaptiveCard": {
+        "template": "kvp-effectiveness.json",
+        "data": {
+          "Titel":        "@{variables('Titel')}",
+          "KVPTyp":       "@{variables('KVPTyp')}",
+          "Beschreibung": "@{variables('Beschreibung')}",
+          "Zielzustand":  "@{variables('Zielzustand')}",
+          "Massnahme":    "@{variables('Massnahme')}",
+          "Ursache":      "@{variables('Ursache')}",
+          "PruefDatum":   "@{utcNow('dd.MM.yyyy')}",
+          "KVPUrl":       "@{variables('KVPUrl')}",
+          "KVPId":        "@{variables('KVPId')}"
+        }
+      },
+      "timeout": "P14D"
+    },
+
+    {
+      "id": "effectiveness_decision",
+      "type": "Switch",
+      "expression": "@body('send_effectiveness_card')?['wirksamkeit']",
+      "cases": {
+
+        "wirksam": [
+          {
+            "id": "update_kvp_closed",
+            "type": "SharePoint_UpdateItem",
+            "description": "KVP abschliessen – Wirksamkeit bestätigt (PDCA: Act)",
+            "siteUrl": "{QMS_SITE_URL}",
+            "listName": "QMS-KVP",
+            "itemId": "@{variables('KVPId')}",
+            "fields": {
+              "QMSStatus":                   "Abgeschlossen",
+              "QMSWirksamkeitsstatus":        "Wirksam",
+              "QMSWirksamkeitsbeschreibung":  "@{body('send_effectiveness_card')?['beurteilung']}",
+              "QMSWirksamkeitsdatum":         "@{utcNow()}",
+              "QMSAbgeschlossenAm":           "@{utcNow()}",
+              "QMSFortschritt":               100
+            }
+          },
+          {
+            "id": "notify_closed",
+            "type": "SendEmail",
+            "to": "@{variables('VerantwortlicherEmail')}",
+            "subject": "KVP abgeschlossen: @{variables('Titel')}",
+            "body": "Ihre KVP-Massnahme wurde als wirksam beurteilt und ist abgeschlossen.\n\nPrüfer: @{variables('PrueferName')}\nBeurteilung: @{body('send_effectiveness_card')?['beurteilung']}\n\nKVP öffnen: @{variables('KVPUrl')}"
+          }
+        ],
+
+        "nicht_wirksam": [
+          {
+            "id": "update_kvp_reopen",
+            "type": "SharePoint_UpdateItem",
+            "description": "KVP zurücksetzen – neue Massnahme erforderlich",
+            "siteUrl": "{QMS_SITE_URL}",
+            "listName": "QMS-KVP",
+            "itemId": "@{variables('KVPId')}",
+            "fields": {
+              "QMSStatus":                   "Massnahme definiert",
+              "QMSWirksamkeitsstatus":        "Nicht wirksam – neue Massnahme erforderlich",
+              "QMSWirksamkeitsbeschreibung":  "@{body('send_effectiveness_card')?['beurteilung']}",
+              "QMSWirksamkeitsdatum":         "@{utcNow()}",
+              "QMSFortschritt":               25
+            }
+          },
+          {
+            "id": "notify_reopen",
+            "type": "SendEmail",
+            "to": "@{variables('VerantwortlicherEmail')}",
+            "subject": "KVP Massnahme nicht wirksam – Überarbeitung erforderlich: @{variables('Titel')}",
+            "body": "Die Wirksamkeitsprüfung hat ergeben, dass die Massnahme nicht ausreichend wirksam war.\n\nPrüfer: @{variables('PrueferName')}\nBeurteilung: @{body('send_effectiveness_card')?['beurteilung']}\n\nBitte definieren Sie eine neue Massnahme:\n@{variables('KVPUrl')}"
+          }
+        ]
+      },
+
+      "default": [
+        {
+          "id": "escalate_timeout",
+          "type": "SendEmail",
+          "to": "{QMS_ADMIN_EMAIL}",
+          "subject": "KVP Wirksamkeitsprüfung überfällig: @{variables('Titel')}",
+          "body": "Die Wirksamkeitsprüfung für KVP #@{variables('KVPId')} wurde @{variables('PrueferName')} zugewiesen, aber innerhalb von 14 Tagen nicht abgeschlossen.\n\nBitte Status klären: @{variables('KVPUrl')}"
+        }
+      ]
+    }
+
+  ]
+}

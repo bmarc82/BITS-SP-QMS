@@ -1,0 +1,133 @@
+{
+  "name": "QMS – KVP Benachrichtigung",
+  "description": "Benachrichtigt den Verantwortlichen bei neuer KVP-Zuweisung und eskaliert bei Fälligkeit. Ausgelöst durch SharePoint-Listenänderungen in QMS-KVP.",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "SharePoint_ItemCreated",
+    "siteUrl": "{QMS_SITE_URL}",
+    "listName": "QMS-KVP"
+  },
+  "variables": [
+    { "name": "KVPId",              "value": "@triggerOutputs()?['body/ID']" },
+    { "name": "Titel",              "value": "@triggerOutputs()?['body/Title']" },
+    { "name": "KVPTyp",             "value": "@triggerOutputs()?['body/QMSKVPTyp']" },
+    { "name": "Quelle",             "value": "@triggerOutputs()?['body/QMSQuelle']" },
+    { "name": "Prioritaet",         "value": "@triggerOutputs()?['body/QMSPrioritaet']" },
+    { "name": "Beschreibung",       "value": "@triggerOutputs()?['body/QMSBeschreibung']" },
+    { "name": "Zieldatum",          "value": "@triggerOutputs()?['body/QMSZieldatum']" },
+    { "name": "VerantwortlicherEmail", "value": "@triggerOutputs()?['body/QMSVerantwortlicher/Email']" },
+    { "name": "VerantwortlicherName",  "value": "@triggerOutputs()?['body/QMSVerantwortlicher/DisplayName']" },
+    { "name": "ErfasserEmail",      "value": "@triggerOutputs()?['body/QMSErfasser/Email']" },
+    { "name": "KVPUrl",             "value": "@triggerOutputs()?['body/{Link}']" }
+  ],
+  "actions": [
+
+    {
+      "id": "check_assignee",
+      "type": "Condition",
+      "description": "Nur benachrichtigen wenn ein Verantwortlicher gesetzt ist",
+      "expression": "@not(empty(variables('VerantwortlicherEmail')))",
+      "ifFalse": [
+        {
+          "id": "terminate_no_assignee",
+          "type": "Terminate",
+          "status": "Succeeded",
+          "message": "Kein Verantwortlicher gesetzt – keine Benachrichtigung."
+        }
+      ]
+    },
+
+    {
+      "id": "send_assignment_card",
+      "type": "PostAdaptiveCardAndWaitForResponse",
+      "description": "Teams Adaptive Card mit KVP-Details und Bestätigungsschaltfläche an Verantwortlichen",
+      "recipient": "@{variables('VerantwortlicherEmail')}",
+      "adaptiveCard": {
+        "template": "kvp-assignment.json",
+        "data": {
+          "Titel":        "@{variables('Titel')}",
+          "KVPTyp":       "@{variables('KVPTyp')}",
+          "Quelle":       "@{variables('Quelle')}",
+          "Prioritaet":   "@{variables('Prioritaet')}",
+          "Beschreibung": "@{variables('Beschreibung')}",
+          "Zieldatum":    "@{formatDateTime(variables('Zieldatum'), 'dd.MM.yyyy')}",
+          "ErfasstAm":    "@{utcNow('dd.MM.yyyy')}",
+          "KVPUrl":       "@{variables('KVPUrl')}",
+          "KVPId":        "@{variables('KVPId')}"
+        }
+      },
+      "timeout": "P3D"
+    },
+
+    {
+      "id": "assignment_response",
+      "type": "Switch",
+      "expression": "@body('send_assignment_card')?['submitActionId']",
+      "cases": {
+
+        "accept": [
+          {
+            "id": "update_status_accepted",
+            "type": "SharePoint_UpdateItem",
+            "description": "Status auf 'Massnahme definiert' setzen wenn Verantwortlicher annimmt",
+            "siteUrl": "{QMS_SITE_URL}",
+            "listName": "QMS-KVP",
+            "itemId": "@{variables('KVPId')}",
+            "fields": {
+              "QMSStatus": "Massnahme definiert",
+              "QMSMassnahme": "@{body('send_assignment_card')?['massnahme']}"
+            }
+          },
+          {
+            "id": "notify_erfasser_accepted",
+            "type": "SendEmail",
+            "description": "Erfasser über Annahme informieren",
+            "to": "@{variables('ErfasserEmail')}",
+            "subject": "KVP angenommen: @{variables('Titel')}",
+            "body": "Die KVP-Aufgabe wurde von @{variables('VerantwortlicherName')} angenommen.\n\nMassnahme: @{body('send_assignment_card')?['massnahme']}\n\nKVP öffnen: @{variables('KVPUrl')}"
+          }
+        ],
+
+        "reject": [
+          {
+            "id": "update_status_rejected",
+            "type": "SharePoint_UpdateItem",
+            "description": "Status auf 'Abgelehnt' setzen",
+            "siteUrl": "{QMS_SITE_URL}",
+            "listName": "QMS-KVP",
+            "itemId": "@{variables('KVPId')}",
+            "fields": { "QMSStatus": "Abgelehnt" }
+          },
+          {
+            "id": "notify_erfasser_rejected",
+            "type": "SendEmail",
+            "description": "Erfasser über Ablehnung informieren",
+            "to": "@{variables('ErfasserEmail')}",
+            "subject": "KVP abgelehnt: @{variables('Titel')}",
+            "body": "Die KVP-Aufgabe wurde von @{variables('VerantwortlicherName')} abgelehnt.\n\nGrund: @{body('send_assignment_card')?['ablehnungsgrund']}\n\nBitte neu zuweisen: @{variables('KVPUrl')}"
+          },
+          {
+            "id": "notify_admin_rejected",
+            "type": "SendEmail",
+            "description": "QMS Admin über Ablehnung informieren",
+            "to": "{QMS_ADMIN_EMAIL}",
+            "subject": "KVP ohne Verantwortlichen: @{variables('Titel')}",
+            "body": "KVP #@{variables('KVPId')} wurde abgelehnt und hat keinen Verantwortlichen mehr.\n\nBitte neu zuweisen: @{variables('KVPUrl')}"
+          }
+        ]
+      },
+
+      "default": [
+        {
+          "id": "escalate_no_response",
+          "type": "SendEmail",
+          "description": "Eskalation nach 3 Tagen ohne Reaktion",
+          "to": "{QMS_ADMIN_EMAIL}",
+          "subject": "KVP ohne Reaktion: @{variables('Titel')}",
+          "body": "KVP #@{variables('KVPId')} wurde @{variables('VerantwortlicherName')} zugewiesen, aber innerhalb von 3 Tagen keine Reaktion.\n\nBitte Status klären: @{variables('KVPUrl')}"
+        }
+      ]
+    }
+
+  ]
+}

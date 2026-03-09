@@ -1,0 +1,116 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Neue KVP-Aufgabe zugewiesen",
+      "size": "Large",
+      "weight": "Bolder",
+      "color": "Accent"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${Titel}",
+      "size": "Medium",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "FactSet",
+      "spacing": "Medium",
+      "facts": [
+        { "title": "Typ",        "value": "${KVPTyp}" },
+        { "title": "Quelle",     "value": "${Quelle}" },
+        { "title": "Priorität",  "value": "${Prioritaet}" },
+        { "title": "Zieldatum",  "value": "${Zieldatum}" },
+        { "title": "Erfasst am", "value": "${ErfasstAm}" }
+      ]
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Beschreibung",
+          "weight": "Bolder"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${Beschreibung}",
+          "wrap": true,
+          "isSubtle": true
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "style": "warning",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Geplante Massnahme *",
+          "weight": "Bolder"
+        },
+        {
+          "type": "Input.Text",
+          "id": "massnahme",
+          "placeholder": "Beschreiben Sie die geplante Massnahme zur Behebung",
+          "isMultiline": true,
+          "isRequired": true,
+          "errorMessage": "Bitte geplante Massnahme beschreiben"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Aufgabe annehmen",
+      "style": "positive",
+      "data": {
+        "action": "accept",
+        "kvpId": "${KVPId}"
+      }
+    },
+    {
+      "type": "Action.ShowCard",
+      "title": "Aufgabe ablehnen",
+      "style": "destructive",
+      "card": {
+        "type": "AdaptiveCard",
+        "body": [
+          {
+            "type": "Input.Text",
+            "id": "ablehnungsgrund",
+            "label": "Ablehnungsgrund *",
+            "placeholder": "Warum können Sie diese Aufgabe nicht übernehmen?",
+            "isMultiline": true,
+            "isRequired": true,
+            "errorMessage": "Bitte Ablehnungsgrund angeben"
+          }
+        ],
+        "actions": [
+          {
+            "type": "Action.Submit",
+            "title": "Ablehnen bestätigen",
+            "style": "destructive",
+            "data": {
+              "action": "reject",
+              "kvpId": "${KVPId}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "KVP öffnen",
+      "url": "${KVPUrl}"
+    }
+  ]
+}

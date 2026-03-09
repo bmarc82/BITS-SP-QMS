@@ -1,0 +1,173 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Wirksamkeitsprüfung erforderlich",
+      "size": "Large",
+      "weight": "Bolder",
+      "color": "Warning"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${Titel}",
+      "size": "Medium",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Bitte beurteilen Sie die Wirksamkeit der umgesetzten Massnahme gemäss ISO 9001:2015 Kap. 10.2 / 10.3.",
+      "wrap": true,
+      "isSubtle": true,
+      "spacing": "Small"
+    },
+    {
+      "type": "FactSet",
+      "spacing": "Medium",
+      "facts": [
+        { "title": "KVP-Typ",    "value": "${KVPTyp}" },
+        { "title": "Prüfdatum",  "value": "${PruefDatum}" }
+      ]
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Problembeschreibung (Ist-Zustand)",
+                  "weight": "Bolder",
+                  "size": "Small"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${Beschreibung}",
+                  "wrap": true,
+                  "isSubtle": true,
+                  "size": "Small"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Zielzustand (Soll)",
+                  "weight": "Bolder",
+                  "size": "Small"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${Zielzustand}",
+                  "wrap": true,
+                  "isSubtle": true,
+                  "size": "Small"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Small",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Umgesetzte Massnahme",
+          "weight": "Bolder",
+          "size": "Small"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${Massnahme}",
+          "wrap": true,
+          "isSubtle": true,
+          "size": "Small"
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Wirksamkeitsbeurteilung *",
+          "weight": "Bolder"
+        },
+        {
+          "type": "Input.ChoiceSet",
+          "id": "wirksamkeit",
+          "style": "expanded",
+          "isRequired": true,
+          "errorMessage": "Bitte Wirksamkeit beurteilen",
+          "choices": [
+            {
+              "title": "Wirksam – Massnahme hat das Problem behoben",
+              "value": "wirksam"
+            },
+            {
+              "title": "Nicht wirksam – neue Massnahme erforderlich",
+              "value": "nicht_wirksam"
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "Begründung / Nachweis *",
+          "weight": "Bolder",
+          "spacing": "Medium"
+        },
+        {
+          "type": "Input.Text",
+          "id": "beurteilung",
+          "placeholder": "Beschreiben Sie die Grundlage Ihrer Beurteilung (z.B. gemessene KPIs, Audit-Feststellungen, Kundenfeedback)",
+          "isMultiline": true,
+          "isRequired": true,
+          "errorMessage": "Bitte Beurteilung begründen (mind. 20 Zeichen)",
+          "minLength": 20
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "ℹ️ Ihre Beurteilung wird im QMS-Changelog dokumentiert und ist Nachweis für ISO 9001:2015 Kapitel 10.2.2 (e).",
+      "wrap": true,
+      "isSubtle": true,
+      "spacing": "Medium",
+      "size": "Small"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Beurteilung einreichen",
+      "style": "positive",
+      "data": {
+        "action": "submitEffectiveness",
+        "kvpId": "${KVPId}"
+      }
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "KVP öffnen",
+      "url": "${KVPUrl}"
+    }
+  ]
+}

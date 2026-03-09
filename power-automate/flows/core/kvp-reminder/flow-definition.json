@@ -1,0 +1,75 @@
+{
+  "name": "QMS – KVP Fälligkeitserinnerung",
+  "description": "Tägliche Prüfung aller offenen KVP-Einträge. Sendet 7 Tage vor Fälligkeit eine Erinnerung und eskaliert bei überfälligen Einträgen an den QMS-Admin.",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "Recurrence",
+    "frequency": "Day",
+    "interval": 1,
+    "startTime": "06:00:00",
+    "timeZone": "W. Europe Standard Time"
+  },
+  "actions": [
+
+    {
+      "id": "get_open_kvp",
+      "type": "SharePoint_GetItems",
+      "description": "Alle offenen KVP mit Fälligkeit in den nächsten 7 Tagen oder bereits überfällig",
+      "siteUrl": "{QMS_SITE_URL}",
+      "listName": "QMS-KVP",
+      "query": "<View><Query><Where><And><Or><Eq><FieldRef Name='QMSStatus'/><Value Type='Choice'>Offen</Value></Eq><Or><Eq><FieldRef Name='QMSStatus'/><Value Type='Choice'>Massnahme definiert</Value></Eq><Or><Eq><FieldRef Name='QMSStatus'/><Value Type='Choice'>In Bearbeitung</Value></Eq><Eq><FieldRef Name='QMSStatus'/><Value Type='Choice'>Wirksamkeitsprüfung</Value></Eq></Or></Or></Or><Leq><FieldRef Name='QMSZieldatum'/><Value Type='DateTime' IncludeTimeValue='FALSE'><Today OffsetDays='7'/></Value></Leq></And></Where></Query></View>",
+      "top": 500
+    },
+
+    {
+      "id": "loop_kvp",
+      "type": "Apply_ToEach",
+      "foreach": "@outputs('get_open_kvp')?['body/value']",
+      "actions": [
+
+        {
+          "id": "calc_days_remaining",
+          "type": "Compose",
+          "description": "Verbleibende Tage bis Zieldatum berechnen",
+          "inputs": "@div(sub(ticks(item()?['QMSZieldatum']), ticks(utcNow())), 864000000000)"
+        },
+
+        {
+          "id": "is_overdue",
+          "type": "Condition",
+          "expression": "@less(outputs('calc_days_remaining'), 0)",
+          "description": "Ist der KVP bereits überfällig?",
+
+          "ifTrue": [
+            {
+              "id": "send_overdue_admin",
+              "type": "SendEmail",
+              "to": "{QMS_ADMIN_EMAIL}",
+              "subject": "KVP ÜBERFÄLLIG: @{item()?['Title']}",
+              "body": "KVP #@{item()?['ID']} ist seit @{mul(outputs('calc_days_remaining'), -1)} Tag(en) überfällig.\n\nStatus: @{item()?['QMSStatus']}\nVerantwortlich: @{item()?['QMSVerantwortlicher']?['DisplayName']}\nPriorität: @{item()?['QMSPrioritaet']}\n\nDirekt öffnen: @{item()?['{Link}']}"
+            },
+            {
+              "id": "send_overdue_responsible",
+              "type": "SendEmail",
+              "to": "@{item()?['QMSVerantwortlicher']?['Email']}",
+              "subject": "ÜBERFÄLLIG – Ihre KVP-Aufgabe: @{item()?['Title']}",
+              "body": "Ihre KVP-Aufgabe ist seit @{mul(outputs('calc_days_remaining'), -1)} Tag(en) überfällig.\n\nBitte aktualisieren Sie den Status oder kontaktieren Sie den QMS-Administrator.\n\nKVP öffnen: @{item()?['{Link}']}"
+            }
+          ],
+
+          "ifFalse": [
+            {
+              "id": "send_reminder",
+              "type": "SendEmail",
+              "description": "Erinnerung 7 Tage vor Fälligkeit",
+              "to": "@{item()?['QMSVerantwortlicher']?['Email']}",
+              "subject": "Erinnerung: KVP fällig in @{outputs('calc_days_remaining')} Tag(en) – @{item()?['Title']}",
+              "body": "Ihre KVP-Aufgabe ist in @{outputs('calc_days_remaining')} Tag(en) fällig.\n\nAktuelle Status: @{item()?['QMSStatus']}\nFortschritt: @{item()?['QMSFortschritt']}%\n\nBitte aktualisieren Sie den Fortschritt:\n@{item()?['{Link}']}"
+            }
+          ]
+        }
+      ]
+    }
+
+  ]
+}
