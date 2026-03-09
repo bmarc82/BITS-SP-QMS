@@ -1,7 +1,7 @@
 {
   "name": "QMS Freigabe-Workflow (Hauptversionen)",
   "description": "Begleitet Hauptversionen (x.0) von Entwurf über Genehmigung bis zur Freigabe. Genehmigt sowohl den QMSStatus als auch den SharePoint Content Approval Status. Bei Genehmigung wird ein Changelog-Eintrag erstellt. Nebenversionen (x.1, x.2) werden durch den separaten 'minor-version-changelog' Flow behandelt.",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "trigger": {
     "type": "SharePoint_ItemModified",
     "siteUrl": "{QMS_SITE_URL}",
@@ -55,6 +55,37 @@
           "type": "Terminate",
           "status": "Failed",
           "message": "Änderungsfelder nicht ausgefüllt – Status zurückgesetzt auf Entwurf."
+        }
+      ]
+    },
+
+    {
+      "id": "validate_vier_augen",
+      "type": "Condition",
+      "description": "Vier-Augen-Prinzip: Freigeber darf nicht identisch mit Ersteller sein (ISO 9001:2015 Kap. 7.5.2b)",
+      "expression": "@not(equals(toLower(variables('FreigeberEmail')), toLower(variables('ErstellerEmail'))))",
+      "ifFalse": [
+        {
+          "id": "notify_self_approval_blocked",
+          "type": "SendEmail",
+          "description": "Ersteller über Ablehnung der Selbstfreigabe informieren",
+          "to": "@{variables('ErstellerEmail')}",
+          "subject": "QMS: Selbstfreigabe nicht erlaubt – @{variables('Dokumentname')}",
+          "body": "Ihr Dokument kann nicht durch Sie selbst freigegeben werden (Vier-Augen-Prinzip, ISO 9001:2015 Kap. 7.5.2b).\n\nBitte weisen Sie einen anderen Prozessverantwortlichen als Freigeber zu.\nDokument: @{variables('DokumentUrl')}"
+        },
+        {
+          "id": "reset_status_self_approval",
+          "type": "SharePoint_UpdateItem",
+          "siteUrl": "{QMS_SITE_URL}",
+          "listName": "QMS-Dokumente",
+          "itemId": "@{variables('DokumentId')}",
+          "fields": { "QMSStatus": "Entwurf" }
+        },
+        {
+          "id": "terminate_self_approval",
+          "type": "Terminate",
+          "status": "Failed",
+          "message": "Vier-Augen-Prinzip verletzt: Freigeber und Ersteller sind identisch."
         }
       ]
     },

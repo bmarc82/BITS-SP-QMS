@@ -1,0 +1,158 @@
+{
+  "name": "QMS – Review-Erinnerung (60/30/7 Tage)",
+  "description": "Tägliche Prüfung aller freigegebenen Dokumente auf bevorstehende Review-Termine. Sendet Erinnerungen an Prozessverantwortliche 60, 30 und 7 Tage vor Fälligkeit. Eskaliert überfällige Reviews an den QMS-Admin. Entspricht ISO 9001:2015 Kap. 7.5.3 (Lenkung dokumentierter Information).",
+  "version": "1.1.0",
+  "trigger": {
+    "type": "Recurrence",
+    "frequency": "Day",
+    "interval": 1,
+    "startTime": "08:00:00",
+    "timeZone": "W. Europe Standard Time"
+  },
+  "actions": [
+
+    {
+      "id": "get_all_due_documents",
+      "type": "SharePoint_GetItems",
+      "description": "Alle freigegebenen Dokumente mit Prüfdatum in den nächsten 60 Tagen oder bereits überfällig",
+      "siteUrl": "{QMS_SITE_URL}",
+      "listName": "QMS-Dokumente",
+      "query": "<View><Query><Where><And><Eq><FieldRef Name='QMSStatus'/><Value Type='Choice'>Freigegeben</Value></Eq><Leq><FieldRef Name='QMSNaechstesPruefDatum'/><Value Type='DateTime' IncludeTimeValue='FALSE'><Today OffsetDays='60'/></Value></Leq></And></Where><OrderBy><FieldRef Name='QMSNaechstesPruefDatum'/></OrderBy></Query></View>",
+      "top": 500
+    },
+
+    {
+      "id": "loop_documents",
+      "type": "Apply_ToEach",
+      "foreach": "@outputs('get_all_due_documents')?['body/value']",
+      "actions": [
+
+        {
+          "id": "calc_days",
+          "type": "Compose",
+          "description": "Verbleibende Tage berechnen (negativ = überfällig)",
+          "inputs": "@div(sub(ticks(item()?['QMSNaechstesPruefDatum']), ticks(utcNow())), 864000000000)"
+        },
+
+        {
+          "id": "route_by_days",
+          "type": "Switch",
+          "expression": "@if(less(outputs('calc_days'), 0), 'overdue', if(lessOrEquals(outputs('calc_days'), 7), 'day7', if(lessOrEquals(outputs('calc_days'), 30), 'day30', 'day60')))",
+          "cases": {
+
+            "overdue": [
+              {
+                "id": "send_overdue_owner",
+                "type": "PostAdaptiveCardAndWaitForResponse",
+                "description": "Überfälligen Review – Adaptive Card mit Bestätigung an Verantwortliche/n",
+                "recipient": "@{item()?['QMSProzessverantwortlicher']?['Email']}",
+                "timeout": "P1D",
+                "adaptiveCard": {
+                  "template": "review-reminder.json",
+                  "data": {
+                    "Dringlichkeit":   "ÜBERFÄLLIG",
+                    "DringlichkeitFarbe": "Attention",
+                    "Dokumentname":    "@{item()?['FileLeafRef']}",
+                    "Version":         "@{item()?['QMSVersion']}",
+                    "PruefDatum":      "@{formatDateTime(item()?['QMSNaechstesPruefDatum'], 'dd.MM.yyyy')}",
+                    "TageFaellig":     "@{mul(outputs('calc_days'), -1)} Tage überfällig",
+                    "DokumentUrl":     "@{item()?['{Link}']}",
+                    "ISOKapitel":      "@{item()?['QMSISOKapitel']}"
+                  }
+                }
+              },
+              {
+                "id": "send_overdue_admin",
+                "type": "SendEmail",
+                "description": "Eskalation an QMS-Admin",
+                "to": "{QMS_ADMIN_EMAIL}",
+                "subject": "QMS Review ÜBERFÄLLIG: @{item()?['FileLeafRef']}",
+                "body": "Das folgende Dokument hat seinen Review-Termin um @{mul(outputs('calc_days'), -1)} Tage überschritten:\n\nDokument: @{item()?['FileLeafRef']} v@{item()?['QMSVersion']}\nVerantwortlich: @{item()?['QMSProzessverantwortlicher']?['DisplayName']}\nFällig seit: @{formatDateTime(item()?['QMSNaechstesPruefDatum'], 'dd.MM.yyyy')}\n\nBitte klären Sie den Status:\n@{item()?['{Link}']}\n\nHinweis: Überfällige Reviews können die ISO 9001:2015-Konformität (Kap. 7.5.3) gefährden."
+              },
+              {
+                "id": "log_overdue",
+                "type": "SharePoint_CreateItem",
+                "description": "Überfälligkeit protokollieren für Audit-Trail",
+                "siteUrl": "{QMS_SITE_URL}",
+                "listName": "QMS-Review-Log",
+                "fields": {
+                  "Title":           "@{item()?['FileLeafRef']} – Review überfällig",
+                  "QMSDokumentId":   "@{item()?['ID']}",
+                  "QMSAktion":       "Eskalation",
+                  "QMSKommentar":    "@{mul(outputs('calc_days'), -1)} Tage überfällig. Benachrichtigung an Verantwortliche/n und Admin.",
+                  "QMSTimestamp":    "@{utcNow()}"
+                }
+              }
+            ],
+
+            "day7": [
+              {
+                "id": "send_reminder_7",
+                "type": "PostAdaptiveCard",
+                "description": "7-Tage-Erinnerung – dringend",
+                "recipient": "@{item()?['QMSProzessverantwortlicher']?['Email']}",
+                "adaptiveCard": {
+                  "template": "review-reminder.json",
+                  "data": {
+                    "Dringlichkeit":      "Letzte Erinnerung – 7 Tage",
+                    "DringlichkeitFarbe": "Warning",
+                    "Dokumentname":       "@{item()?['FileLeafRef']}",
+                    "Version":            "@{item()?['QMSVersion']}",
+                    "PruefDatum":         "@{formatDateTime(item()?['QMSNaechstesPruefDatum'], 'dd.MM.yyyy')}",
+                    "TageFaellig":        "in @{outputs('calc_days')} Tagen fällig",
+                    "DokumentUrl":        "@{item()?['{Link}']}",
+                    "ISOKapitel":         "@{item()?['QMSISOKapitel']}"
+                  }
+                }
+              }
+            ],
+
+            "day30": [
+              {
+                "id": "send_reminder_30",
+                "type": "PostAdaptiveCard",
+                "description": "30-Tage-Erinnerung",
+                "recipient": "@{item()?['QMSProzessverantwortlicher']?['Email']}",
+                "adaptiveCard": {
+                  "template": "review-reminder.json",
+                  "data": {
+                    "Dringlichkeit":      "Erinnerung – 30 Tage",
+                    "DringlichkeitFarbe": "Default",
+                    "Dokumentname":       "@{item()?['FileLeafRef']}",
+                    "Version":            "@{item()?['QMSVersion']}",
+                    "PruefDatum":         "@{formatDateTime(item()?['QMSNaechstesPruefDatum'], 'dd.MM.yyyy')}",
+                    "TageFaellig":        "in @{outputs('calc_days')} Tagen fällig",
+                    "DokumentUrl":        "@{item()?['{Link}']}",
+                    "ISOKapitel":         "@{item()?['QMSISOKapitel']}"
+                  }
+                }
+              }
+            ],
+
+            "day60": [
+              {
+                "id": "send_reminder_60",
+                "type": "PostAdaptiveCard",
+                "description": "60-Tage-Voraberinnerung",
+                "recipient": "@{item()?['QMSProzessverantwortlicher']?['Email']}",
+                "adaptiveCard": {
+                  "template": "review-reminder.json",
+                  "data": {
+                    "Dringlichkeit":      "Vorschau – 60 Tage",
+                    "DringlichkeitFarbe": "Good",
+                    "Dokumentname":       "@{item()?['FileLeafRef']}",
+                    "Version":            "@{item()?['QMSVersion']}",
+                    "PruefDatum":         "@{formatDateTime(item()?['QMSNaechstesPruefDatum'], 'dd.MM.yyyy')}",
+                    "TageFaellig":        "in @{outputs('calc_days')} Tagen fällig",
+                    "DokumentUrl":        "@{item()?['{Link}']}",
+                    "ISOKapitel":         "@{item()?['QMSISOKapitel']}"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
