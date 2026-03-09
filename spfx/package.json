@@ -1,0 +1,44 @@
+{
+  "name": "qms-m365-spfx",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.17.1 <19.0.0"
+  },
+  "scripts": {
+    "build": "gulp bundle",
+    "build:ship": "gulp bundle --ship",
+    "package": "gulp package-solution --ship",
+    "serve": "gulp serve",
+    "test": "jest --coverage",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@microsoft/sp-core-library": "1.18.2",
+    "@microsoft/sp-listview-extensibility": "1.18.2",
+    "@microsoft/sp-property-pane": "1.18.2",
+    "@microsoft/sp-webpart-base": "1.18.2",
+    "@microsoft/sp-http": "1.18.2",
+    "@microsoft/sp-page-context": "1.18.2",
+    "@pnp/sp": "3.21.0",
+    "@pnp/core": "3.21.0",
+    "react": "17.0.1",
+    "react-dom": "17.0.1"
+  },
+  "devDependencies": {
+    "@microsoft/eslint-plugin-spfx": "1.18.2",
+    "@microsoft/rush-stack-compiler-5.0": "0.1.0",
+    "@microsoft/sp-build-web": "1.18.2",
+    "@microsoft/sp-module-interfaces": "1.18.2",
+    "@types/react": "17.0.45",
+    "@types/react-dom": "17.0.17",
+    "@typescript-eslint/eslint-plugin": "5.62.0",
+    "@typescript-eslint/parser": "5.62.0",
+    "eslint": "8.57.0",
+    "gulp": "4.0.2",
+    "jest": "29.7.0",
+    "@types/jest": "29.5.12",
+    "ts-jest": "29.1.4",
+    "typescript": "5.0.4"
+  }
+}

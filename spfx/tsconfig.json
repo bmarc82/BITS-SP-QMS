@@ -1,0 +1,20 @@
+{
+  "extends": "./node_modules/@microsoft/rush-stack-compiler-5.0/includes/tsconfig-web.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "forceConsistentCasingInFileNames": true,
+    "module": "CommonJS",
+    "jsx": "react",
+    "declaration": true,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "outDir": "lib",
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@microsoft"
+    ],
+    "types": ["jest"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

@@ -1,0 +1,144 @@
+.dashboardRoot {
+  font-family: "Segoe UI", sans-serif;
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #323130;
+    margin: 0;
+  }
+}
+
+.summaryBadges {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 6px;
+  min-width: 100px;
+  border: 1px solid transparent;
+
+  &.overdue {
+    background: #fde7e9;
+    border-color: #f1707b;
+    .badgeCount { color: #a4262c; }
+  }
+  &.soon {
+    background: #fff4ce;
+    border-color: #f7d68b;
+    .badgeCount { color: #7d5a00; }
+  }
+  &.ok {
+    background: #dff6dd;
+    border-color: #82c783;
+    .badgeCount { color: #107c10; }
+  }
+}
+
+.badgeCount {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.badgeLabel {
+  font-size: 11px;
+  color: #605e5c;
+  margin-top: 4px;
+  text-align: center;
+}
+
+.filterBar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tableHeader {
+  background: #f3f2f1;
+
+  th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #323130;
+    white-space: nowrap;
+    border-bottom: 2px solid #edebe9;
+  }
+}
+
+.tableRow {
+  border-bottom: 1px solid #edebe9;
+  transition: background 0.1s;
+
+  &:hover {
+    background: #f3f2f1;
+  }
+
+  td {
+    padding: 8px 12px;
+    vertical-align: middle;
+  }
+}
+
+.urgencyDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+
+  &.overdue { background: #a4262c; }
+  &.soon    { background: #f7630c; }
+  &.ok      { background: #107c10; }
+}
+
+.docLink {
+  color: #0078d4;
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover { text-decoration: underline; }
+}
+
+.daysBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.overdue { background: #fde7e9; color: #a4262c; }
+  &.soon    { background: #fff4ce; color: #7d5a00; }
+  &.ok      { background: #dff6dd; color: #107c10; }
+}
+
+.loading, .empty {
+  padding: 32px;
+  text-align: center;
+  color: #605e5c;
+}
