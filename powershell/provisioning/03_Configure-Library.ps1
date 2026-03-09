@@ -36,6 +36,30 @@ $fields = @(
 )
 
 foreach ($field in $fields) {
+    $existing = Get-PnPField -List $listName -Identity $field.Name -ErrorAction SilentlyContinue
+    if ($existing) {
+        Write-QMSLog "Spalte bereits vorhanden: $($field.Name)" -Level WARNING
+        continue
+    }
+
     Write-QMSLog "Füge Spalte hinzu: $($field.Name)"
-    # Add-PnPField ...
+
+    switch ($field.Type) {
+        'Choice' {
+            $choicesXml = ($field.Choices | ForEach-Object { "<CHOICE>$_</CHOICE>" }) -join ''
+            $schema = "<Field Type='Choice' DisplayName='$($field.Name)' Name='$($field.Name)' Required='FALSE'><CHOICES>$choicesXml</CHOICES></Field>"
+            Add-PnPFieldFromXml -List $listName -FieldXml $schema | Out-Null
+        }
+        'User' {
+            Add-PnPField -List $listName -DisplayName $field.Name -InternalName $field.Name -Type User -Required:$false | Out-Null
+        }
+        'DateTime' {
+            Add-PnPField -List $listName -DisplayName $field.Name -InternalName $field.Name -Type DateTime -Required:$false | Out-Null
+        }
+        'Text' {
+            Add-PnPField -List $listName -DisplayName $field.Name -InternalName $field.Name -Type Text -Required:$false | Out-Null
+        }
+    }
+
+    Write-QMSLog "Spalte hinzugefügt: $($field.Name)"
 }
