@@ -3,8 +3,13 @@
 <#
 .SYNOPSIS
     Schritt 3: QMS-Dokumentenbibliothek konfigurieren
+.DESCRIPTION
+    Legt die QMS-Dokumentenbibliothek an und konfiguriert alle Spalten.
+    Prozessart, Bereich und Prozess werden als Managed Metadata Felder
+    angelegt (Term Store). Voraussetzung: 02b_Create-TermStore.ps1 wurde
+    bereits ausgeführt (termstore-ids.json muss vorhanden sein).
 .VERSION
-    1.0.0
+    1.1.0
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -15,51 +20,98 @@ if (-not (Test-QMSConnection -Config $Config)) { exit 1 }
 
 Write-QMSLog "Konfiguriere Dokumentenbibliothek..."
 
-$listName = 'QMS-Dokumente'
-$existing = Get-PnPList -Identity $listName -ErrorAction SilentlyContinue
+# ── Term Set IDs laden (aus 02b_Create-TermStore.ps1) ────────────────────────
 
-if (-not $existing) {
+$idsPath = "$PSScriptRoot/../config/termstore-ids.json"
+if (-not (Test-Path $idsPath)) {
+    Write-QMSLog "termstore-ids.json nicht gefunden. Bitte zuerst 02b_Create-TermStore.ps1 ausführen." -Level ERROR
+    exit 1
+}
+$termSetIds = Get-Content $idsPath -Raw | ConvertFrom-Json
+
+# ── Bibliothek sicherstellen ──────────────────────────────────────────────────
+
+$listName = 'QMS-Dokumente'
+$list = Get-PnPList -Identity $listName -ErrorAction SilentlyContinue
+
+if (-not $list) {
     if ($PSCmdlet.ShouldProcess($listName, 'Bibliothek erstellen')) {
         New-PnPList -Title $listName -Template DocumentLibrary -EnableVersioning -MajorVersions 10
         Write-QMSLog "Bibliothek erstellt: $listName"
     }
 }
 
-# Spalten hinzufügen
-$fields = @(
-    @{ Name = 'QMSStatus';               Type = 'Choice'; Choices = @('Entwurf','In Prüfung','Freigegeben','Archiviert') },
-    @{ Name = 'QMSProzessverantwortlicher'; Type = 'User' },
-    @{ Name = 'QMSGueltigAb';            Type = 'DateTime' },
-    @{ Name = 'QMSNaechstesPruefDatum';  Type = 'DateTime' },
-    @{ Name = 'QMSISOKapitel';           Type = 'Text' },
-    @{ Name = 'QMSProzessart';           Type = 'Choice'; Choices = @('Führungsprozess','Kernprozess','Supportprozess') }
-)
+# ── Hilfsfunktion: Spalte idempotent anlegen ──────────────────────────────────
 
-foreach ($field in $fields) {
-    $existing = Get-PnPField -List $listName -Identity $field.Name -ErrorAction SilentlyContinue
-    if ($existing) {
-        Write-QMSLog "Spalte bereits vorhanden: $($field.Name)" -Level WARNING
-        continue
+function Add-QMSFieldIfMissing {
+    param([string]$List, [string]$Name, [scriptblock]$CreateAction)
+    $f = Get-PnPField -List $List -Identity $Name -ErrorAction SilentlyContinue
+    if ($f) {
+        Write-QMSLog "Spalte bereits vorhanden: $Name" -Level WARNING
+        return
     }
-
-    Write-QMSLog "Füge Spalte hinzu: $($field.Name)"
-
-    switch ($field.Type) {
-        'Choice' {
-            $choicesXml = ($field.Choices | ForEach-Object { "<CHOICE>$_</CHOICE>" }) -join ''
-            $schema = "<Field Type='Choice' DisplayName='$($field.Name)' Name='$($field.Name)' Required='FALSE'><CHOICES>$choicesXml</CHOICES></Field>"
-            Add-PnPFieldFromXml -List $listName -FieldXml $schema | Out-Null
-        }
-        'User' {
-            Add-PnPField -List $listName -DisplayName $field.Name -InternalName $field.Name -Type User -Required:$false | Out-Null
-        }
-        'DateTime' {
-            Add-PnPField -List $listName -DisplayName $field.Name -InternalName $field.Name -Type DateTime -Required:$false | Out-Null
-        }
-        'Text' {
-            Add-PnPField -List $listName -DisplayName $field.Name -InternalName $field.Name -Type Text -Required:$false | Out-Null
-        }
-    }
-
-    Write-QMSLog "Spalte hinzugefügt: $($field.Name)"
+    Write-QMSLog "Füge Spalte hinzu: $Name"
+    & $CreateAction
+    Write-QMSLog "Spalte hinzugefügt: $Name"
 }
+
+# ── Standard-Spalten (Choice / User / DateTime / Text) ───────────────────────
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSStatus' -CreateAction {
+    $xml = "<Field Type='Choice' DisplayName='QMSStatus' Name='QMSStatus' Required='FALSE'>" +
+           "<Default>Entwurf</Default><CHOICES>" +
+           "<CHOICE>Entwurf</CHOICE><CHOICE>In Prüfung</CHOICE>" +
+           "<CHOICE>Freigegeben</CHOICE><CHOICE>Archiviert</CHOICE>" +
+           "</CHOICES></Field>"
+    Add-PnPFieldFromXml -List $listName -FieldXml $xml | Out-Null
+}
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSProzessverantwortlicher' -CreateAction {
+    Add-PnPField -List $listName -DisplayName 'QMSProzessverantwortlicher' `
+        -InternalName 'QMSProzessverantwortlicher' -Type User -Required:$false | Out-Null
+}
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSGueltigAb' -CreateAction {
+    Add-PnPField -List $listName -DisplayName 'QMSGueltigAb' `
+        -InternalName 'QMSGueltigAb' -Type DateTime -Required:$false | Out-Null
+}
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSNaechstesPruefDatum' -CreateAction {
+    Add-PnPField -List $listName -DisplayName 'QMSNaechstesPruefDatum' `
+        -InternalName 'QMSNaechstesPruefDatum' -Type DateTime -Required:$false | Out-Null
+}
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSISOKapitel' -CreateAction {
+    Add-PnPField -List $listName -DisplayName 'QMSISOKapitel' `
+        -InternalName 'QMSISOKapitel' -Type Text -Required:$false | Out-Null
+}
+
+# ── Managed Metadata Spalten (Term Store) ─────────────────────────────────────
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSProzessart' -CreateAction {
+    Add-PnPTaxonomyField -List $listName `
+        -DisplayName      'QMSProzessart' `
+        -InternalName     'QMSProzessart' `
+        -TaxonomyItemId   $termSetIds.Prozessart `
+        -MultiValue:      $false | Out-Null
+}
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSBereich' -CreateAction {
+    Add-PnPTaxonomyField -List $listName `
+        -DisplayName      'QMSBereich' `
+        -InternalName     'QMSBereich' `
+        -TaxonomyItemId   $termSetIds.Bereich `
+        -MultiValue:      $false | Out-Null
+}
+
+Add-QMSFieldIfMissing -List $listName -Name 'QMSProzess' -CreateAction {
+    # Verknüpfung zu einem Term aus dem dynamischen Term Set "Prozesse"
+    # Wird befüllt wenn ein Dokument einem Prozess zugeordnet wird
+    Add-PnPTaxonomyField -List $listName `
+        -DisplayName      'QMSProzess' `
+        -InternalName     'QMSProzess' `
+        -TaxonomyItemId   $termSetIds.Prozesse `
+        -MultiValue:      $false | Out-Null
+}
+
+Write-QMSLog "Dokumentenbibliothek vollständig konfiguriert."

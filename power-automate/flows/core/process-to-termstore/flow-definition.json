@@ -1,0 +1,114 @@
+{
+  "name": "QMS – Prozess in Term Store anlegen",
+  "description": "Wenn ein neuer Prozess in der QMS-Prozesse Liste angelegt wird, wird automatisch ein entsprechender Term im Term Set 'Prozesse' erstellt. Damit kann der Prozess in der Dokumentenbibliothek als Metadatenfeld (QMSProzess) verwendet werden.",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "SharePoint_WhenItemCreated",
+    "siteUrl": "{QMS_SITE_URL}",
+    "listName": "QMS-Prozesse"
+  },
+  "variables": [
+    {
+      "name": "ProcessName",
+      "type": "string",
+      "value": "@triggerOutputs()?['body/Title']"
+    },
+    {
+      "name": "TermStoreGroupId",
+      "type": "string",
+      "value": "{TERM_GROUP_ID}"
+    },
+    {
+      "name": "ProzesseTermSetId",
+      "type": "string",
+      "value": "{PROZESSE_TERMSET_ID}"
+    }
+  ],
+  "actions": [
+    {
+      "id": "check_term_exists",
+      "type": "HTTP",
+      "description": "Prüfen ob Term bereits existiert (verhindert Duplikate bei Mehrfachauslösung)",
+      "method": "GET",
+      "uri": "{SHAREPOINT_TENANT_URL}/_api/v2.1/termStore/groups/@{variables('TermStoreGroupId')}/sets/@{variables('ProzesseTermSetId')}/terms?$filter=labels/any(l:l/name eq '@{variables('ProcessName')}')",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "authentication": "ManagedIdentity"
+    },
+    {
+      "id": "condition_term_missing",
+      "type": "Condition",
+      "description": "Nur anlegen wenn Term noch nicht existiert",
+      "expression": "@equals(length(outputs('check_term_exists')?['body/value']), 0)",
+      "ifTrue": [
+        {
+          "id": "create_term",
+          "type": "HTTP",
+          "description": "Term im Term Set 'Prozesse' anlegen",
+          "method": "POST",
+          "uri": "{SHAREPOINT_TENANT_URL}/_api/v2.1/termStore/groups/@{variables('TermStoreGroupId')}/sets/@{variables('ProzesseTermSetId')}/terms",
+          "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          "body": {
+            "labels": [
+              {
+                "languageTag": "de-CH",
+                "name": "@{variables('ProcessName')}",
+                "isDefault": true
+              }
+            ]
+          },
+          "authentication": "ManagedIdentity"
+        },
+        {
+          "id": "update_list_item",
+          "type": "SharePoint_UpdateItem",
+          "description": "Term-ID am Listeneintrag speichern (für spätere Referenz)",
+          "siteUrl": "{QMS_SITE_URL}",
+          "listName": "QMS-Prozesse",
+          "itemId": "@triggerOutputs()?['body/ID']",
+          "fields": {
+            "QMSTermId": "@outputs('create_term')?['body/id']"
+          }
+        },
+        {
+          "id": "notify_admin",
+          "type": "PostAdaptiveCard",
+          "description": "QMS-Admin über neuen Prozess-Term informieren",
+          "recipient": "{QMS_ADMIN_EMAIL}",
+          "card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "Neuer Prozess im Term Store angelegt",
+                "weight": "Bolder"
+              },
+              {
+                "type": "FactSet",
+                "facts": [
+                  { "title": "Prozess:", "value": "@{variables('ProcessName')}" },
+                  { "title": "Term Set:", "value": "Prozesse" },
+                  { "title": "Erstellt von:", "value": "@{triggerOutputs()?['body/Author/DisplayName']}" }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "ifFalse": [
+        {
+          "id": "log_duplicate",
+          "type": "Terminate",
+          "description": "Term existiert bereits – kein erneutes Anlegen",
+          "status": "Succeeded",
+          "message": "Term '@{variables('ProcessName')}' existiert bereits im Term Store."
+        }
+      ]
+    }
+  ]
+}
